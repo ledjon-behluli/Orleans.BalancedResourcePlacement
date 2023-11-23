@@ -1,6 +1,11 @@
 ﻿using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 using Orleans.Runtime;
+
+using SiloStatisticsArray = 
+    System.Collections.Immutable.ImmutableArray<
+        System.ValueTuple<
+            Orleans.Runtime.SiloAddress, 
+            Orleans.Runtime.SiloRuntimeStatistics>>;
 
 namespace Orleans.BalancedResourcePlacement;
 
@@ -14,11 +19,11 @@ internal sealed class SiloRuntimeStatisticsCollector : BackgroundService
     public SiloRuntimeStatisticsCollector(
         IClusterClient clusterClient,
         ISiloStatisticsListener statisticsListner,
-        IOptions<BalancedResourcePlacementOptions> options)
+        BalancedResourcePlacementOptions options)
     {
         this.clusterClient = clusterClient;
-        this.statisticsListener = statisticsListner;
-        collectionPeriod = (options?.Value ?? BalancedResourcePlacementOptions.Default).ResourceStatisticsCollectionPeriod;
+        statisticsListener = statisticsListner;
+        collectionPeriod = options.ResourceStatisticsCollectionPeriod;
     }
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -28,41 +33,42 @@ internal sealed class SiloRuntimeStatisticsCollector : BackgroundService
         while (!cancellationToken.IsCancellationRequested)
         {
             var hosts = await grain.GetHosts(onlyActive: true);
-            var tasks = hosts.Keys.Select(silo => FetchStatisticsForSiloAsync(grain, silo));
-            var statistics = await Task.WhenAll(tasks);
+            var addresses = hosts.Keys.ToArray();
+            var statistics = await grain.GetRuntimeStatistics(addresses);
 
-            UpdateSiloStatistics(statistics);
+            // GetRuntimeStatistics returns an ordered SiloRuntimeStatistics array, therefor we can associate the stats-silo
+            SiloStatisticsArray array = SiloStatisticsArray.Empty;
+            for (int i = 0; i < addresses.Length; i++)
+            {
+                array = array.Add((addresses[i], statistics[i]));
+            }
+
+            UpdateSiloStatistics(array);
 
             await Task.Delay(collectionPeriod, cancellationToken);
         }
     }
 
-    private static async Task<(SiloAddress, SiloRuntimeStatistics)> FetchStatisticsForSiloAsync(IManagementGrain grain, SiloAddress silo)
+    private void UpdateSiloStatistics(SiloStatisticsArray array)
     {
-        var statistics = await grain.GetRuntimeStatistics(new[] { silo });
-        return (silo, statistics.FirstOrDefault());
-    }
-
-    private void UpdateSiloStatistics((SiloAddress, SiloRuntimeStatistics)[] newStatistics)
-    {
-        foreach (var (silo, newStats) in newStatistics)
+        foreach (var (silo, stats) in array)
         {
-            if (siloStatistics.TryGetValue(silo, out SiloRuntimeStatistics oldStats))
+            if (siloStatistics.TryGetValue(silo, out SiloRuntimeStatistics? oldStats))
             {
-                if (!AreStatisticsEqual(oldStats, newStats))
+                if (!AreStatisticsEqual(oldStats, stats))
                 {
-                    siloStatistics[silo] = newStats;
-                    statisticsListener.OnSiloStatisticsChanged(silo, newStats);
+                    siloStatistics[silo] = stats;
+                    statisticsListener.OnSiloStatisticsChanged(silo, stats);
                 }
             }
             else
             {
-                siloStatistics.Add(silo, newStats);
-                statisticsListener.OnSiloStatisticsChanged(silo, newStats);
+                siloStatistics.Add(silo, stats);
+                statisticsListener.OnSiloStatisticsChanged(silo, stats);
             }
         }
 
-        var removedSilos = siloStatistics.Keys.Except(newStatistics.Select(pair => pair.Item1)).ToList();
+        var removedSilos = siloStatistics.Keys.Except(array.Select(x => x.Item1)).ToList();
         foreach (var removedSilo in removedSilos)
         {
             siloStatistics.Remove(removedSilo);

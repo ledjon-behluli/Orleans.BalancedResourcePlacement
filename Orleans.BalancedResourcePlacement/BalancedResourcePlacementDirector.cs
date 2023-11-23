@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Options;
-using Orleans.Runtime;
+﻿using Orleans.Runtime;
 using Orleans.Runtime.Placement;
 using System.Collections.Concurrent;
 
@@ -9,9 +8,9 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
 {
     private readonly ConcurrentDictionary<SiloAddress, SiloRuntimeStatistics> siloStatistics = new();
     private readonly BalancedResourcePlacementOptions options;
-   
-    public BalancedResourcePlacementDirector(IOptions<BalancedResourcePlacementOptions> options)
-        => this.options = options?.Value ?? BalancedResourcePlacementOptions.Default;
+
+    public BalancedResourcePlacementDirector(BalancedResourcePlacementOptions options)
+        => this.options = options;
 
     public Task<SiloAddress> OnAddActivation(PlacementStrategy strategy, PlacementTarget target, IPlacementContext context)
     {
@@ -59,9 +58,9 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
             float normalizedTotalPhysicalMemory = stats.TotalPhysicalMemory.HasValue ? stats.TotalPhysicalMemory.Value / (1024 * 1024 * 1024) : 0f;
 
             return (options.CpuUsageWeight * normalizedCpuUsage) +
-                    (options.AvailableMemoryWeight * normalizedAvailableMemory) +
-                    (options.MemoryUsageWeight * normalizedMemoryUsage) +
-                    (options.TotalPhysicalMemoryWeight * normalizedTotalPhysicalMemory);
+                   (options.AvailableMemoryWeight * normalizedAvailableMemory) +
+                   (options.MemoryUsageWeight * normalizedMemoryUsage) +
+                   (options.TotalPhysicalMemoryWeight * normalizedTotalPhysicalMemory);
         }
 
         return options.CpuUsageWeight * normalizedCpuUsage;

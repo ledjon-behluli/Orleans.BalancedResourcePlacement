@@ -25,14 +25,14 @@ public sealed class BalancedResourcePlacementAttribute : PlacementAttribute
 /// <remarks>
 /// The intention of this placement strategy is to place new grain activations on a server based upon utilized cluster resources.
 /// <list type="number">
-/// <item><description><b>Cpu usage:</b> Often a critical metric for performance. The default weight (0.3), indicates that CPU usage is important but not the sole determinant in placement decisions.</description></item>
-/// <item><description><b>Available memory:</b> Is important for preventing memory-related performance issues. The default weight (0.4), emphasizes the importance of nodes with ample available memory.</description></item>
+/// <item><description><b>Cpu usage:</b> The default weight (0.3), indicates that CPU usage is important but not the sole determinant in placement decisions.</description></item>
+/// <item><description><b>Available memory:</b> The default weight (0.4), emphasizes the importance of nodes with ample available memory.</description></item>
 /// <item><description><b>Memory usage:</b> Is important for understanding the current load on a node. The default weight (0.2), ensures consideration without making it overly influential.</description></item>
 /// <item><description><b>Total physical memory:</b> Represents the overall capacity of a node. The default weight (0.1), contributes to a more long-term resource planning perspective.</description></item>
 /// </list>
 /// This placement strategy is configured by adding the <see cref="BalancedResourcePlacementAttribute"/> attribute to a grain.
 /// </remarks>
-[Serializable, GenerateSerializer, Immutable, SuppressReferenceTracking]
+[Immutable, Serializable, GenerateSerializer, SuppressReferenceTracking]
 public sealed class BalancedResourcePlacementStrategy : PlacementStrategy 
 {
     internal static readonly BalancedResourcePlacementStrategy Singleton = new();
@@ -46,13 +46,4 @@ public sealed class BalancedResourcePlacementOptions
     public float AvailableMemoryWeight { get; set; }
     public float MemoryUsageWeight { get; set; }
     public float TotalPhysicalMemoryWeight { get; set; }
-
-    internal static readonly BalancedResourcePlacementOptions Default = new()
-    {
-        ResourceStatisticsCollectionPeriod = TimeSpan.FromSeconds(5),
-        CpuUsageWeight = 0.3f,
-        AvailableMemoryWeight = 0.4f,
-        MemoryUsageWeight = 0.2f,
-        TotalPhysicalMemoryWeight = 0.1f
-    };
 }
