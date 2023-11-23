@@ -4,6 +4,6 @@ namespace Orleans.BalancedResourcePlacement;
 
 internal interface ISiloStatisticsListener
 {
-    void OnSiloStatisticsChanged(SiloAddress updatedSilo, SiloRuntimeStatistics newSiloStats);
-    void OnSiloRemoved(SiloAddress removedSilo);
+    void OnSiloStatisticsChanged(SiloAddress address, SiloRuntimeStatistics statistics);
+    void OnSiloRemoved(SiloAddress address);
 }

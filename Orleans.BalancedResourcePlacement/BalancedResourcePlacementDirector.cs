@@ -26,6 +26,11 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
             throw new OrleansException($"Cannot place grain with Id = [{target.GrainIdentity}], because there are no compatible silos.");
         }
 
+        if (compatibleSilos.Length == 1)
+        {
+            return Task.FromResult(compatibleSilos[0]);
+        }
+
         if (siloStatistics.IsEmpty)
         {
             return Task.FromResult(RandomSilo(compatibleSilos));
@@ -36,7 +41,7 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
         {
             if (siloStatistics.TryGetValue(silo, out var stats))
             {
-                float score = CalculateScore(stats);
+                float score = stats.IsOverloaded ? 0f : CalculateScore(stats);
                 scores[silo] = score;
             }
         }
@@ -66,11 +71,11 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
         return options.CpuUsageWeight * normalizedCpuUsage;
     }
 
-    public void OnSiloStatisticsChanged(SiloAddress updatedSilo, SiloRuntimeStatistics newSiloStats)
-        => siloStatistics.AddOrUpdate(updatedSilo, newSiloStats, (_, oldStats) => newSiloStats);
+    public void OnSiloStatisticsChanged(SiloAddress address, SiloRuntimeStatistics statistics)
+        => siloStatistics.AddOrUpdate(address, statistics, (_, _) => statistics);
 
-    public void OnSiloRemoved(SiloAddress removedSilo)
-        => siloStatistics.TryRemove(removedSilo, out _);
+    public void OnSiloRemoved(SiloAddress address)
+        => siloStatistics.TryRemove(address, out _);
 
     private static SiloAddress RandomSilo(SiloAddress[] addresses)
         => addresses[Random.Shared.Next(addresses.Length)];

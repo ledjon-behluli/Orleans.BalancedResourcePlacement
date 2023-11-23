@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Orleans.BalancedResourcePlacement;
 
-public static class BalancedResourcePlacementExtensions
+public static class Extensions
 {
     /// <summary>
     /// Register the <see cref="BalancedResourcePlacementStrategy"/> on the <see cref="ISiloBuilder"/>.
@@ -28,23 +28,21 @@ public static class BalancedResourcePlacementExtensions
         if (options.CpuUsageWeight + 
             options.MemoryUsageWeight + 
             options.AvailableMemoryWeight + 
-            options.TotalPhysicalMemoryWeight != 100f)
+            options.TotalPhysicalMemoryWeight != 1.0f)
         {
-            throw new InvalidOperationException($"Invalid {nameof(BalancedResourcePlacementOptions)} provided. The total sum accross all the weights can not differ from 100.0");
+            throw new InvalidOperationException($"Invalid {nameof(BalancedResourcePlacementOptions)} provided. The total sum accross all the weights can not differ from 1.0f");
         }
-
-        siloBuilder.Services.AddSingleton(options);
 
         if (isGlobal)
         {
             siloBuilder.Services.AddSingleton<PlacementStrategy, BalancedResourcePlacementStrategy>();
         }
 
-        siloBuilder.Services.AddSingletonNamedService<PlacementStrategy, BalancedResourcePlacementStrategy>(typeof(BalancedResourcePlacementStrategy).Name);
-        siloBuilder.Services.AddSingletonKeyedService<Type, IPlacementDirector, BalancedResourcePlacementDirector>(typeof(BalancedResourcePlacementStrategy));
+        Type type = typeof(BalancedResourcePlacementStrategy);
 
-        siloBuilder.Services.AddSingleton(sp => (ISiloStatisticsListener)sp.GetServiceByKey<Type, IPlacementDirector>(typeof(BalancedResourcePlacementStrategy)));
-
+        siloBuilder.Services.AddSingleton(options);
+        siloBuilder.AddPlacementDirector<BalancedResourcePlacementStrategy, BalancedResourcePlacementDirector>();
+        siloBuilder.Services.AddSingleton(sp => (ISiloStatisticsListener)sp.GetServiceByKey<Type, IPlacementDirector>(type));
         siloBuilder.Services.AddHostedService<SiloRuntimeStatisticsCollector>();
 
         return siloBuilder;
