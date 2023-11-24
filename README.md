@@ -7,7 +7,7 @@
 
 This is an Orleans [Grain Placement](https://learn.microsoft.com/en-us/dotnet/orleans/grains/grain-placement) strategy which attempts to achieve approximately even load based on cluster resources. It assigns weights to `SiloRuntimeStatistics` to prioritize different properties and calculates a normalized score for each silo. The silo with the highest score is chosen for placing the activation. Normalization ensures that each property contributes proportionally to the overall score. You can adjust the weights based on your specific requirements and priorities for load balancing.
 
-`ActivationCountBasedPlacement` is useful when you want to achive an evenly distributed activation count, but that does not mean that the resources are utilized evenly across the silos.
+`ActivationCountBasedPlacement` is useful when you want to achieve an evenly distributed activation count, but that does not mean that the resources are utilized evenly across the silos.
 Thats what this package tries to do! It can prove to be useful having different weights for different silos, when talking about [heterogeneous silos](https://learn.microsoft.com/en-us/dotnet/orleans/host/heterogeneous-silos)
 where different server resources and different performance characteristics.
 
