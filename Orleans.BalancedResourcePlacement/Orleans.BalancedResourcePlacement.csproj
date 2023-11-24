@@ -1,16 +1,36 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <PackageId>Orleans.BalancedResourcePlacement</PackageId>
+    <Authors>Ledjon Behluli</Authors>
+    <Title>A placement strategy which attempts to achieve approximately even load based on cluster resources.</Title>
+    <Description>A placement strategy which attempts to achieve approximately even load based on cluster resources.</Description>
+    <Copyright>Copyright (c) Ledjon Behluli</Copyright>
+    <PackageTags>dotnet;orleans;orleans-example;csharp;could-native</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageIconUrl>https://raw.githubusercontent.com/ledjon-behluli/Orleans.BalancedResourcePlacement/master/OrleansLogo.png</PackageIconUrl>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <RepositoryUrl>https://github.com/ledjon-behluli/Orleans.BalancedResourcePlacement</RepositoryUrl>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Orleans.Server" Version="7.2.3" />
-    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="7.0.0" />
-    <PackageReference Include="System.Management" Version="7.0.0" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.0" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
   </ItemGroup>
   
 </Project>

@@ -16,7 +16,7 @@ public sealed class BalancedResourcePlacementAttribute : PlacementAttribute
 }
 
 /// <summary>
-/// A placement strategy which attempts to achieve approximately even load based upon the utilized cluster resources. 
+/// A placement strategy which attempts to achieve approximately even load based on cluster resources. 
 /// It assigns weights to <see cref="SiloRuntimeStatistics"/> to prioritize different properties and calculates a normalized score for each silo.
 /// The silo with the highest score is chosen for placing the activation. 
 /// Normalization ensures that each property contributes proportionally to the overall score.

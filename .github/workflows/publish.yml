@@ -1,0 +1,35 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      nuget_version:
+        type: string
+        description: NuGet version
+        
+permissions:
+  contents: write
+  
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Build
+      run: dotnet build --configuration Release
+    
+    - name: Pack
+      working-directory: Orleans.BalancedResourcePlacement
+      run: dotnet pack --configuration Release --no-build -p:Version=${{ inputs.nuget_version }}
+      
+    - name: Push
+      working-directory: Orleans.BalancedResourcePlacement/bin/Release
+      run: |
+        dotnet nuget push Orleans.BalancedResourcePlacement.*.nupkg --skip-duplicate -k ${{ secrets.ORLEANS_BALANCED_RESOURCE_PLACEMENT_NUGET_KEY }} -s https://api.nuget.org/v3/index.json
