@@ -24,7 +24,6 @@ internal sealed class SiloRuntimeStatisticsCollector : BackgroundService
         BalancedResourcePlacementOptions options)
     {
         this.clusterClient = clusterClient;
-
         this.appEnvironmentStatistics = appEnvironmentStatistics;
         statisticsListener = statisticsListner;
         collectionPeriod = options.ResourceStatisticsCollectionPeriod;

@@ -26,10 +26,10 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
             throw new OrleansException($"Cannot place grain with Id = [{target.GrainIdentity}], because there are no compatible silos.");
         }
 
-        //if (compatibleSilos.Length == 1)
-        //{
-        //    return Task.FromResult(compatibleSilos[0]);
-        //}
+        if (compatibleSilos.Length == 1)
+        {
+            return Task.FromResult(compatibleSilos[0]);
+        }
 
         if (siloStatistics.IsEmpty)
         {

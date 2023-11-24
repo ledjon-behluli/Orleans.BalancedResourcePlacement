@@ -35,15 +35,30 @@ public sealed class BalancedResourcePlacementAttribute : PlacementAttribute
 [Immutable, Serializable, GenerateSerializer, SuppressReferenceTracking]
 internal sealed class BalancedResourcePlacementStrategy : PlacementStrategy 
 {
-    internal static readonly BalancedResourcePlacementStrategy Singleton = new();
+    public static readonly BalancedResourcePlacementStrategy Singleton = new();
 }
 
 public sealed class BalancedResourcePlacementOptions
 {
+    /// <summary>
+    /// The period of time to wait until the next resource statistics collection is triggered. 
+    /// </summary>
     public TimeSpan ResourceStatisticsCollectionPeriod { get; set; }
 
+    /// <summary>
+    /// The importance of the CPU utilization by the silo [percentage].
+    /// </summary>
     public float CpuUsageWeight { get; set; }
+    /// <summary>
+    /// The importance of the amount of memory available to the silo [bytes].
+    /// </summary>
     public float AvailableMemoryWeight { get; set; }
+    /// <summary>
+    /// The importance of the used memory by the silo [bytes].
+    /// </summary>
     public float MemoryUsageWeight { get; set; }
+    /// <summary>
+    /// The importance of the total physical memory available to the silo [bytes].
+    /// </summary>
     public float TotalPhysicalMemoryWeight { get; set; }
 }

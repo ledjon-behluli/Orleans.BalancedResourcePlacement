@@ -31,7 +31,6 @@ Console.WriteLine("Orleans is stopping...");
 
 await host.StopAsync();
 
-
 namespace NS
 {
     public interface IEchoGrain : IGrainWithIntegerKey

@@ -1,7 +1,6 @@
 ﻿using Orleans.Runtime;
 using Orleans.Runtime.Placement;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Orleans.Statistics;
 using System.Runtime.InteropServices;
 
@@ -33,7 +32,7 @@ public static class Extensions
             options.AvailableMemoryWeight + 
             options.TotalPhysicalMemoryWeight != 1.0f)
         {
-            throw new InvalidOperationException($"Invalid {nameof(BalancedResourcePlacementOptions)} provided. The total sum accross all the weights can not differ from 1.0f");
+            throw new InvalidOperationException($"Invalid {nameof(BalancedResourcePlacementOptions)} provided. The total sum across all the weights must equal 1.0");
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
