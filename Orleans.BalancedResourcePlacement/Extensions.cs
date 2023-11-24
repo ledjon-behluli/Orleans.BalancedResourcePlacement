@@ -1,6 +1,9 @@
 ﻿using Orleans.Runtime;
 using Orleans.Runtime.Placement;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Orleans.Statistics;
+using System.Runtime.InteropServices;
 
 namespace Orleans.BalancedResourcePlacement;
 
@@ -31,6 +34,18 @@ public static class Extensions
             options.TotalPhysicalMemoryWeight != 1.0f)
         {
             throw new InvalidOperationException($"Invalid {nameof(BalancedResourcePlacementOptions)} provided. The total sum accross all the weights can not differ from 1.0f");
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            throw new NotSupportedException("Neither Orleans nor this package supports collection of resource statistics on OSX.");
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            siloBuilder.Services.AddSingleton<WindowsEnvironmentStatistics>();
+            siloBuilder.Services.AddSingleton<IHostEnvironmentStatistics>(sp => sp.GetRequiredService<WindowsEnvironmentStatistics>());
+            siloBuilder.Services.AddSingleton<ILifecycleParticipant<ISiloLifecycle>, WindowsEnvironmentStatisticsLifecycleAdapter>();
         }
 
         if (isGlobal)

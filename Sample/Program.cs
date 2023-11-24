@@ -17,7 +17,7 @@ await host.StartAsync();
 var grainFactory = host.Services.GetRequiredService<IGrainFactory>();
 int id = 0;
 
-while (id < 10)
+while (id < 100)
 {
     var result = await grainFactory.GetGrain<IEchoGrain>(id).Ping();
     Console.WriteLine(result);
@@ -39,7 +39,7 @@ namespace NS
         Task<string> Ping();
     }
 
-    [BalancedResourcePlacement]
+    [BalancedResourcePlacement] // or use 'AddBalancedResourcePlacement(isGlobal: true))' if you want this strategy to apply globally
     public class EchoGrain : Grain, IEchoGrain
     {
         public Task<string> Ping() => Task.FromResult("Pong");

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Orleans.Runtime;
-
+using Orleans.Statistics;
 using SiloStatisticsArray = 
     System.Collections.Immutable.ImmutableArray<
         System.ValueTuple<
@@ -13,15 +13,19 @@ internal sealed class SiloRuntimeStatisticsCollector : BackgroundService
 {
     private readonly IClusterClient clusterClient;
     private readonly ISiloStatisticsListener statisticsListener;
+    private readonly IAppEnvironmentStatistics appEnvironmentStatistics;
     private readonly TimeSpan collectionPeriod;
     private readonly Dictionary<SiloAddress, SiloRuntimeStatistics> siloStatistics = new();
 
     public SiloRuntimeStatisticsCollector(
         IClusterClient clusterClient,
         ISiloStatisticsListener statisticsListner,
+        IAppEnvironmentStatistics appEnvironmentStatistics,
         BalancedResourcePlacementOptions options)
     {
         this.clusterClient = clusterClient;
+
+        this.appEnvironmentStatistics = appEnvironmentStatistics;
         statisticsListener = statisticsListner;
         collectionPeriod = options.ResourceStatisticsCollectionPeriod;
     }
@@ -34,9 +38,8 @@ internal sealed class SiloRuntimeStatisticsCollector : BackgroundService
         {
             var hosts = await grain.GetHosts(onlyActive: true);
             var addresses = hosts.Keys.ToArray();
-            var statistics = await grain.GetRuntimeStatistics(addresses);
+            var statistics = await grain.GetRuntimeStatistics(addresses); // returns an ordered SiloRuntimeStatistics array
 
-            // GetRuntimeStatistics returns an ordered SiloRuntimeStatistics array, therefor we can associate the stats-silo
             SiloStatisticsArray array = SiloStatisticsArray.Empty;
             for (int i = 0; i < addresses.Length; i++)
             {

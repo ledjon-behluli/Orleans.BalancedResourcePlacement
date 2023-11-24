@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orleans.BalancedResourcePlacement", "Orleans.BalancedResourcePlacement\Orleans.BalancedResourcePlacement.csproj", "{E8DF4124-F5C7-4B08-B749-DD21DE60C444}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.BalancedResourcePlacement", "Orleans.BalancedResourcePlacement\Orleans.BalancedResourcePlacement.csproj", "{E8DF4124-F5C7-4B08-B749-DD21DE60C444}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample", "Sample\Sample.csproj", "{3B89F7DE-E13A-4066-AED8-4DFE634B510C}"
 EndProject

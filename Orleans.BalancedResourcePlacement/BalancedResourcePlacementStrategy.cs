@@ -33,7 +33,7 @@ public sealed class BalancedResourcePlacementAttribute : PlacementAttribute
 /// This placement strategy is configured by adding the <see cref="BalancedResourcePlacementAttribute"/> attribute to a grain.
 /// </remarks>
 [Immutable, Serializable, GenerateSerializer, SuppressReferenceTracking]
-public sealed class BalancedResourcePlacementStrategy : PlacementStrategy 
+internal sealed class BalancedResourcePlacementStrategy : PlacementStrategy 
 {
     internal static readonly BalancedResourcePlacementStrategy Singleton = new();
 }
