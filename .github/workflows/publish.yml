@@ -32,4 +32,4 @@ jobs:
     - name: Push
       working-directory: Orleans.BalancedResourcePlacement/bin/Release
       run: |
-        dotnet nuget push Orleans.BalancedResourcePlacement.*.nupkg --skip-duplicate -k ${{ secrets.ORLEANS_BALANCED_RESOURCE_PLACEMENT_NUGET_KEY }} -s https://api.nuget.org/v3/index.json
+        dotnet nuget push Orleans.BalancedResourcePlacement.*.nupkg --skip-duplicate -k ${{ secrets.ORLEANS_PKGS_NUGET_KEY }} -s https://api.nuget.org/v3/index.json
