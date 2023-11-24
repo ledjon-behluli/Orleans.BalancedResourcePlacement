@@ -16,7 +16,7 @@
     <Description>A placement strategy which attempts to achieve approximately even load based on cluster resources.</Description>
     <Copyright>Copyright (c) Ledjon Behluli</Copyright>
     <PackageTags>dotnet;orleans;orleans-example;csharp;could-native</PackageTags>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIconUrl>https://raw.githubusercontent.com/ledjon-behluli/Orleans.BalancedResourcePlacement/master/OrleansLogo.png</PackageIconUrl>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IncludeSymbols>true</IncludeSymbols>
