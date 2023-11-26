@@ -1,17 +1,12 @@
 ﻿using Orleans.Runtime;
 using Orleans.Runtime.Placement;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using SiloStatisticsArray =
-    System.Collections.Immutable.ImmutableArray<
-        System.ValueTuple<Orleans.Runtime.SiloAddress,float>>;
 
 namespace Orleans.BalancedResourcePlacement;
 
 internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, ISiloStatisticsListener
 {
-    private readonly ConcurrentDictionary<SiloAddress, SiloRuntimeStatistics> siloStatistics = new();
+    private readonly ConcurrentDictionary<SiloAddress, SiloRuntimeStatistics> siloStatistics = [];
     private readonly BalancedResourcePlacementOptions options;
 
     public BalancedResourcePlacementDirector(BalancedResourcePlacementOptions options)
@@ -42,18 +37,12 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
         }
 
         List<KeyValuePair<SiloAddress, SiloRuntimeStatistics>> relevantSilos = [];
-        
         foreach (var silo in compatibleSilos)
         {
             if (siloStatistics.TryGetValue(silo, out var stats) && !stats.IsOverloaded)
             {
                 relevantSilos.Add(new(silo, stats));
             }
-        }
-
-        if (relevantSilos.Count == 0)
-        {
-            return Task.FromResult(RandomSilo(compatibleSilos));
         }
 
         int chooseFrom = (int)Math.Ceiling(Math.Sqrt(relevantSilos.Count));
@@ -68,7 +57,7 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
             chooseFromSilos.Add(pickedSilo.Key, score);
         }
 
-        var selectedSilo = chooseFromSilos.OrderByDescending(kv => kv.Value).First().Key; // select the silo with the highest score.
+        var selectedSilo = chooseFromSilos.OrderByDescending(kv => kv.Value).FirstOrDefault().Key; // select the silo with the highest score.
         return Task.FromResult(selectedSilo ?? RandomSilo(compatibleSilos));
     }
 
