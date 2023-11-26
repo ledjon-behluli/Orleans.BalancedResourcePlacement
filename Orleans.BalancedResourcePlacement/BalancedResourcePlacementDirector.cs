@@ -53,6 +53,8 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
             int index = Random.Shared.Next(relevantSilos.Count);
             var pickedSilo = relevantSilos[index];
 
+            relevantSilos.RemoveAt(index);
+
             float score = CalculateScore(pickedSilo.Value);
             chooseFromSilos.Add(pickedSilo.Key, score);
         }
