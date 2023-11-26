@@ -6,7 +6,7 @@ namespace Orleans.BalancedResourcePlacement;
 
 internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, ISiloStatisticsListener
 {
-    private readonly ConcurrentDictionary<SiloAddress, SiloRuntimeStatistics> siloStatistics = new();
+    private readonly ConcurrentDictionary<SiloAddress, SiloRuntimeStatistics> siloStatistics = [];
     private readonly BalancedResourcePlacementOptions options;
 
     public BalancedResourcePlacementDirector(BalancedResourcePlacementOptions options)
@@ -23,7 +23,7 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
 
         if (compatibleSilos.Length == 0)
         {
-            throw new OrleansException($"Cannot place grain with Id = [{target.GrainIdentity}], because there are no compatible silos.");
+            throw new SiloUnavailableException($"Cannot place grain with Id = [{target.GrainIdentity}], because there are no compatible silos.");
         }
 
         if (compatibleSilos.Length == 1)
@@ -36,17 +36,28 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
             return Task.FromResult(RandomSilo(compatibleSilos));
         }
 
-        var scores = new Dictionary<SiloAddress, float>();
+        List<KeyValuePair<SiloAddress, SiloRuntimeStatistics>> relevantSilos = [];
         foreach (var silo in compatibleSilos)
         {
-            if (siloStatistics.TryGetValue(silo, out var stats))
+            if (siloStatistics.TryGetValue(silo, out var stats) && !stats.IsOverloaded)
             {
-                float score = stats.IsOverloaded ? 0f : CalculateScore(stats);
-                scores[silo] = score;
+                relevantSilos.Add(new(silo, stats));
             }
         }
 
-        var selectedSilo = scores.OrderByDescending(kv => kv.Value).First().Key; // select the silo with the highest score.
+        int chooseFrom = (int)Math.Ceiling(Math.Sqrt(relevantSilos.Count));
+        Dictionary<SiloAddress, float> chooseFromSilos = [];
+
+        while (chooseFromSilos.Count < chooseFrom)
+        {
+            int index = Random.Shared.Next(relevantSilos.Count);
+            var pickedSilo = relevantSilos[index];
+
+            float score = CalculateScore(pickedSilo.Value);
+            chooseFromSilos.Add(pickedSilo.Key, score);
+        }
+
+        var selectedSilo = chooseFromSilos.OrderByDescending(kv => kv.Value).FirstOrDefault().Key; // select the silo with the highest score.
         return Task.FromResult(selectedSilo ?? RandomSilo(compatibleSilos));
     }
 
