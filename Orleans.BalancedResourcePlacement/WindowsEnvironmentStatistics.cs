@@ -5,7 +5,7 @@ using System.Management;
 
 namespace Orleans.BalancedResourcePlacement;
 
-internal class WindowsEnvironmentStatistics : IHostEnvironmentStatistics, ILifecycleObserver, IDisposable
+internal sealed class WindowsEnvironmentStatistics : IHostEnvironmentStatistics, ILifecycleObserver, IDisposable
 {
     private readonly TimeSpan monitorPeriod;
 
