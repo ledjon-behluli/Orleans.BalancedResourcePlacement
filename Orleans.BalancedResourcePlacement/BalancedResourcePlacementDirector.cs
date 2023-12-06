@@ -6,8 +6,9 @@ namespace Orleans.BalancedResourcePlacement;
 
 internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, ISiloStatisticsListener
 {
-    private readonly ConcurrentDictionary<SiloAddress, SiloRuntimeStatistics> siloStatistics = [];
+    private readonly ConcurrentDictionary<SiloAddress, ResourceStatistics> siloStatistics = [];
     private readonly BalancedResourcePlacementOptions options;
+    private readonly KalmanFilter kalmanFilter = new();
 
     public BalancedResourcePlacementDirector(BalancedResourcePlacementOptions options)
         => this.options = options;
@@ -36,7 +37,7 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
             return Task.FromResult(RandomSilo(compatibleSilos));
         }
 
-        List<KeyValuePair<SiloAddress, SiloRuntimeStatistics>> relevantSilos = [];
+        List<KeyValuePair<SiloAddress, ResourceStatistics>> relevantSilos = [];
         foreach (var silo in compatibleSilos)
         {
             if (siloStatistics.TryGetValue(silo, out var stats) && !stats.IsOverloaded)
@@ -63,7 +64,7 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
         return Task.FromResult(selectedSilo ?? RandomSilo(compatibleSilos));
     }
 
-    private float CalculateScore(SiloRuntimeStatistics stats)
+    private float CalculateScore(ResourceStatistics stats)
     {
         float normalizedCpuUsage = stats.CpuUsage.HasValue ? stats.CpuUsage.Value / 100f : 0f;
 
@@ -83,7 +84,15 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
     }
 
     public void OnSiloStatisticsChanged(SiloAddress address, SiloRuntimeStatistics statistics)
-        => siloStatistics.AddOrUpdate(address, statistics, (_, _) => statistics);
+        => siloStatistics.AddOrUpdate(
+            key: address, 
+            addValue: new(
+                statistics.CpuUsage,
+                statistics.AvailableMemory, 
+                statistics.MemoryUsage,
+                statistics.TotalPhysicalMemory,
+                statistics.IsOverloaded), 
+            updateValueFactory: (_, _) => kalmanFilter.Update(statistics));
 
     public void OnSiloRemoved(SiloAddress address)
         => siloStatistics.TryRemove(address, out _);
