@@ -8,7 +8,7 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
 {
     private readonly ConcurrentDictionary<SiloAddress, ResourceStatistics> siloStatistics = [];
     private readonly BalancedResourcePlacementOptions options;
-    private readonly KalmanFilter kalmanFilter = new();
+    private readonly SiloRuntimeStatisticsFilter filter = new();
 
     public BalancedResourcePlacementDirector(BalancedResourcePlacementOptions options)
         => this.options = options;
@@ -92,7 +92,7 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
                 statistics.MemoryUsage,
                 statistics.TotalPhysicalMemory,
                 statistics.IsOverloaded), 
-            updateValueFactory: (_, _) => kalmanFilter.Update(statistics));
+            updateValueFactory: (_, _) => filter.Update(statistics));
 
     public void OnSiloRemoved(SiloAddress address)
         => siloStatistics.TryRemove(address, out _);

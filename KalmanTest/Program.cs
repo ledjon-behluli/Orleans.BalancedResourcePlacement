@@ -4,27 +4,56 @@ using Orleans.BalancedResourcePlacement;
 using Orleans.Configuration;
 using Orleans.Runtime;
 using Orleans.Statistics;
+using Spectre.Console;
 using System.Reflection;
 
-var kalmanFilter = new KalmanFilter();
+var filter = new SiloRuntimeStatisticsFilter();
+var faker = new Faker();
+var table = new Table();
+
+table.AddColumn("Iteration");
+table.AddColumn("Simulated (CpuUsage | AvailableMemory | MemoryUsage)");
+table.AddColumn("Filtered (CpuUsage | AvailableMemory | MemoryUsage)");
+table.AddColumn("Difference (%)");
 
 for (int i = 0; i < 50; i++)
 {
-    var simulatedStats = new Faker<SiloRuntimeStatistics>()
-        .CustomInstantiator(CreateSiloRuntimeStatistics)
-        .Generate();
+    var simulatedStats = CreateSiloRuntimeStatistics(faker);
+    var filteredStats = filter.Update(simulatedStats);
 
-    var filteredStats = kalmanFilter.Update(simulatedStats);
+    table.AddRow(
+        (i + 1).ToString(),
+        $"{simulatedStats.CpuUsage} | {simulatedStats.AvailableMemory} | {simulatedStats.MemoryUsage}",
+        $"{filteredStats.CpuUsage} | {filteredStats.AvailableMemory} | {filteredStats.MemoryUsage}",
+        GetDifferencePercentage(simulatedStats, filteredStats));
 
-    Console.WriteLine($"Iteration {i + 1}:");
-    Console.WriteLine($"Simulated Data: {simulatedStats}");
-    Console.WriteLine($"Filtered Data: {filteredStats}");
-    Console.WriteLine();
+    AnsiConsole.WriteLine($"Iteration: {i}");
+    AnsiConsole.Clear();
 
-    Thread.Sleep(100); // Simulating a delay between measurements
+    await Task.Delay(100); // simulating a delay between measurements
 }
 
+AnsiConsole.Write(table);
 Console.ReadKey();
+
+static string GetDifferencePercentage(SiloRuntimeStatistics simulated, ResourceStatistics filtered)
+{
+    var cpu = Diff(simulated.CpuUsage, filtered.CpuUsage);
+    var availableMemory = Diff(simulated.AvailableMemory, filtered.AvailableMemory);
+    var memoryUsage = Diff(simulated.MemoryUsage, filtered.MemoryUsage);
+
+    return $"{cpu}% | {availableMemory}% | {memoryUsage}%";
+
+    static double Diff(float? simulated, float? filtered)
+    {
+        if (simulated.HasValue && filtered.HasValue)
+        {
+            return Math.Round(Math.Abs((filtered.Value - simulated.Value) / simulated.Value) * 100.0, 1);
+        }
+
+        return 0.0;
+    }
+}
 
 static SiloRuntimeStatistics CreateSiloRuntimeStatistics(Faker faker)
 {
@@ -47,8 +76,7 @@ static SiloRuntimeStatistics CreateSiloRuntimeStatistics(Faker faker)
             DateTime.UtcNow
         };
 
-        var a = (SiloRuntimeStatistics)constructorInfo.Invoke(parameters);
-        return a;
+        return (SiloRuntimeStatistics)constructorInfo.Invoke(parameters);
     }
 
     throw new InvalidOperationException("Could not find the internal constructor of SiloRuntimeStatistics");
@@ -56,13 +84,15 @@ static SiloRuntimeStatistics CreateSiloRuntimeStatistics(Faker faker)
 
 class FakeAppEnvironmentStatistics(Faker faker) : IAppEnvironmentStatistics
 {
-    public long? MemoryUsage { get; } = faker.Random.Long(0, Constants.PhysicalMemory);
+    public long? MemoryUsage { get; } = faker.Random.Long(
+        (long)(0.25 * Constants.PhysicalMemory), 
+        (long)(0.45 * Constants.PhysicalMemory));
 }
 
 class FakeHostEnvironmentStatistics(Faker faker, long? memUsage) : IHostEnvironmentStatistics
 {
     public long? TotalPhysicalMemory { get; } = Constants.PhysicalMemory;
-    public float? CpuUsage { get; } = faker.Random.Float(1, 99);
+    public float? CpuUsage { get; } = faker.Random.Float(65, 75);
     public long? AvailableMemory { get; } = Constants.PhysicalMemory - memUsage;
 }
 
