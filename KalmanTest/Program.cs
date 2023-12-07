@@ -12,37 +12,98 @@ var faker = new Faker();
 var table = new Table();
 
 table.AddColumn("Iteration");
-table.AddColumn("Simulated (CpuUsage | AvailableMemory | MemoryUsage)");
-table.AddColumn("Filtered (CpuUsage | AvailableMemory | MemoryUsage)");
+
+table.AddColumn("CpuUsage (Simulated)");
+table.AddColumn("CpuUsage (Filtered)");
 table.AddColumn("Difference (%)");
 
-for (int i = 0; i < 50; i++)
+table.AddColumn("MemoryUsage (Simulated)");
+table.AddColumn("MemoryUsage (Filtered)");
+table.AddColumn("Difference (%)");
+
+float cpuIncrement = 0.1f;
+long memoryIncrement = 10 * Constants._1MB;
+
+float currentCpuUsage = 40.0f;
+long currentMemoryUsage = (long)(0.40 * Constants._16GB);
+
+for (int i = 0; i < 10_000; i++)
 {
-    var simulatedStats = CreateSiloRuntimeStatistics(faker);
+    Console.WriteLine("Iteration: " + i);
+
+    var simulatedStats = CreateSiloRuntimeStatistics(ref currentCpuUsage, ref currentMemoryUsage);
     var filteredStats = filter.Update(simulatedStats);
+    var diffs = GetDifferencePercentage(simulatedStats, filteredStats);
 
     table.AddRow(
         (i + 1).ToString(),
-        $"{simulatedStats.CpuUsage} | {simulatedStats.AvailableMemory} | {simulatedStats.MemoryUsage}",
-        $"{filteredStats.CpuUsage} | {filteredStats.AvailableMemory} | {filteredStats.MemoryUsage}",
-        GetDifferencePercentage(simulatedStats, filteredStats));
+        Formatter.ForDisplay(simulatedStats.CpuUsage),
+        Formatter.ForDisplay(filteredStats.CpuUsage),
+        diffs.Item1,
+        Formatter.ForDisplay(simulatedStats.MemoryUsage),
+        Formatter.ForDisplay(filteredStats.MemoryUsage),
+        diffs.Item2);
 
-    AnsiConsole.WriteLine($"Iteration: {i}");
-    AnsiConsole.Clear();
+    currentCpuUsage += cpuIncrement;
+    if (currentCpuUsage > 75.0f)
+    {
+        cpuIncrement = -0.1f;
+    }
+    if (currentCpuUsage < 40.0f)
+    {
+        cpuIncrement = 0.1f;
+    }
 
-    await Task.Delay(100); // simulating a delay between measurements
+    currentMemoryUsage += memoryIncrement;
+    if (currentMemoryUsage > (long)(0.75 * Constants._16GB))
+    {
+        memoryIncrement = -10 * Constants._1MB;
+    }
+    if (currentMemoryUsage < (long)(0.40 * Constants._16GB))
+    {
+        memoryIncrement = 10 * Constants._1MB;
+    }
 }
+
+Console.WriteLine("Enter any key");
+Console.ReadKey();
 
 AnsiConsole.Write(table);
 Console.ReadKey();
 
-static string GetDifferencePercentage(SiloRuntimeStatistics simulated, ResourceStatistics filtered)
+static SiloRuntimeStatistics CreateSiloRuntimeStatistics(ref float currentCpuUsage, ref long currentMemoryUsage)
+{
+    var constructorInfo = typeof(SiloRuntimeStatistics)
+        .GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
+        .FirstOrDefault();
+
+    if (constructorInfo != null)
+    {
+        var appStats = new FakeAppEnvironmentStatistics(currentMemoryUsage);
+        var hostStats = new FakeHostEnvironmentStatistics(currentCpuUsage, appStats.MemoryUsage);
+
+        var parameters = new object[]
+        {
+            0,
+            0,
+            appStats,
+            hostStats,
+            new OptionsWrapper<LoadSheddingOptions>(new LoadSheddingOptions() { LoadSheddingEnabled = false }),
+            DateTime.UtcNow
+        };
+
+        return (SiloRuntimeStatistics)constructorInfo.Invoke(parameters);
+    }
+
+    throw new InvalidOperationException("Could not find the internal constructor of SiloRuntimeStatistics");
+}
+
+static (string, string) GetDifferencePercentage(SiloRuntimeStatistics simulated, ResourceStatistics filtered)
 {
     var cpu = Diff(simulated.CpuUsage, filtered.CpuUsage);
-    var availableMemory = Diff(simulated.AvailableMemory, filtered.AvailableMemory);
     var memoryUsage = Diff(simulated.MemoryUsage, filtered.MemoryUsage);
 
-    return $"{cpu}% | {availableMemory}% | {memoryUsage}%";
+    return ($"{cpu}%", $"{ memoryUsage}%");
 
     static double Diff(float? simulated, float? filtered)
     {
@@ -55,48 +116,26 @@ static string GetDifferencePercentage(SiloRuntimeStatistics simulated, ResourceS
     }
 }
 
-static SiloRuntimeStatistics CreateSiloRuntimeStatistics(Faker faker)
+class FakeAppEnvironmentStatistics(long? memUsage) : IAppEnvironmentStatistics
 {
-    var constructorInfo = typeof(SiloRuntimeStatistics)
-        .GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
-        .FirstOrDefault();
-
-    if (constructorInfo != null)
-    {
-        var appStats = new FakeAppEnvironmentStatistics(faker);
-        var hostStats = new FakeHostEnvironmentStatistics(faker, appStats.MemoryUsage);
-
-        var parameters = new object[]
-        {
-            0,
-            0,
-            appStats ,
-            hostStats,
-            new OptionsWrapper<LoadSheddingOptions>(new LoadSheddingOptions() { LoadSheddingEnabled = false }),
-            DateTime.UtcNow
-        };
-
-        return (SiloRuntimeStatistics)constructorInfo.Invoke(parameters);
-    }
-
-    throw new InvalidOperationException("Could not find the internal constructor of SiloRuntimeStatistics");
+    public long? MemoryUsage { get; } = memUsage;
 }
 
-class FakeAppEnvironmentStatistics(Faker faker) : IAppEnvironmentStatistics
+class FakeHostEnvironmentStatistics(float? cpuUsage, long? memUsage) : IHostEnvironmentStatistics
 {
-    public long? MemoryUsage { get; } = faker.Random.Long(
-        (long)(0.25 * Constants.PhysicalMemory), 
-        (long)(0.45 * Constants.PhysicalMemory));
+    public long? TotalPhysicalMemory { get; } = Constants._16GB;
+    public float? CpuUsage { get; } = cpuUsage;
+    public long? AvailableMemory { get; } = Constants._16GB - memUsage;
 }
 
-class FakeHostEnvironmentStatistics(Faker faker, long? memUsage) : IHostEnvironmentStatistics
-{
-    public long? TotalPhysicalMemory { get; } = Constants.PhysicalMemory;
-    public float? CpuUsage { get; } = faker.Random.Float(65, 75);
-    public long? AvailableMemory { get; } = Constants.PhysicalMemory - memUsage;
-}
 
 class Constants
 {
-    public const long PhysicalMemory = (long)16 * 1024 * 1024 * 1024;
+    public const long _16GB = (long)16 * 1024 * 1024 * 1024;
+    public const long _1MB = (long)1024 * 1024;
+}
+
+class Formatter
+{
+    public static string ForDisplay(float? value) => Math.Round(value ?? 0, 1).ToString();
 }
