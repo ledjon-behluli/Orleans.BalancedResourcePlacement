@@ -9,6 +9,8 @@ using System.Reflection;
 
 const int iterations = 10_000;
 
+//var noisySin = Math.Sin(k * 3.14 * 5 / 180) + (double)rnd.Next(50) / 100;
+
 var filter = new SiloRuntimeStatisticsFilter();
 var faker = new Faker();
 var table = new Table();
