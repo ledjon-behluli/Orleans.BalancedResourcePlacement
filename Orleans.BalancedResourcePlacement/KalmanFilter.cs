@@ -1,37 +1,8 @@
-﻿using Orleans.Runtime;
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace Orleans.BalancedResourcePlacement;
 
-public record struct ResourceStatistics(
-    float? CpuUsage,
-    float? AvailableMemory,
-    long? MemoryUsage,
-    long? TotalPhysicalMemory,
-    bool IsOverloaded);
-
-public sealed class SiloRuntimeStatisticsFilter
-{
-    private readonly KalmanFilter<float> cpuUsageFilter = new();
-    private readonly KalmanFilter<float> availableMemoryFilter = new();
-    private readonly KalmanFilter<long> memoryUsageFilter = new();
-
-    public ResourceStatistics Update(SiloRuntimeStatistics measurement)
-    {
-        float estimatedCpuUsage = cpuUsageFilter.Filter(measurement.CpuUsage);
-        float estimatedAvailableMemory = availableMemoryFilter.Filter(measurement.AvailableMemory);
-        long estimatedMemoryUsage = memoryUsageFilter.Filter(measurement.MemoryUsage);
-
-        return new(estimatedCpuUsage,
-            estimatedAvailableMemory,
-            estimatedMemoryUsage,
-            measurement.TotalPhysicalMemory,
-            measurement.IsOverloaded);
-    }
-}
-
-internal sealed class KalmanFilter<T> 
-    where T : unmanaged, INumber<T>
+internal sealed class KalmanFilter<T> where T : unmanaged, INumber<T>
 {
     private readonly T measurementNoiseCovariance = T.One;
 

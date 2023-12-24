@@ -4,11 +4,21 @@ using System.Collections.Concurrent;
 
 namespace Orleans.BalancedResourcePlacement;
 
+internal readonly record struct ResourceStatistics(
+    float? CpuUsage,
+    float? AvailableMemory,
+    long? MemoryUsage,
+    long? TotalPhysicalMemory,
+    bool IsOverloaded);
+
 internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, ISiloStatisticsListener
 {
     private readonly ConcurrentDictionary<SiloAddress, ResourceStatistics> siloStatistics = [];
     private readonly BalancedResourcePlacementOptions options;
-    private readonly SiloRuntimeStatisticsFilter filter = new();
+
+    private readonly KalmanFilter<float> cpuUsageFilter = new();
+    private readonly KalmanFilter<float> availableMemoryFilter = new();
+    private readonly KalmanFilter<long> memoryUsageFilter = new();
 
     public BalancedResourcePlacementDirector(BalancedResourcePlacementOptions options)
         => this.options = options;
@@ -86,13 +96,25 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
     public void OnSiloStatisticsChanged(SiloAddress address, SiloRuntimeStatistics statistics)
         => siloStatistics.AddOrUpdate(
             key: address, 
-            addValue: new(
+            addValue: new ResourceStatistics(
                 statistics.CpuUsage,
                 statistics.AvailableMemory, 
                 statistics.MemoryUsage,
                 statistics.TotalPhysicalMemory,
                 statistics.IsOverloaded), 
-            updateValueFactory: (_, _) => filter.Update(statistics));
+            updateValueFactory: (_, _) =>
+            {
+                float estimatedCpuUsage = cpuUsageFilter.Filter(statistics.CpuUsage);
+                float estimatedAvailableMemory = availableMemoryFilter.Filter(statistics.AvailableMemory);
+                long estimatedMemoryUsage = memoryUsageFilter.Filter(statistics.MemoryUsage);
+
+                return new ResourceStatistics(
+                    estimatedCpuUsage,
+                    estimatedAvailableMemory,
+                    estimatedMemoryUsage,
+                    statistics.TotalPhysicalMemory,
+                    statistics.IsOverloaded);
+            });
 
     public void OnSiloRemoved(SiloAddress address)
         => siloStatistics.TryRemove(address, out _);
