@@ -1,8 +1,5 @@
-﻿using MathNet.Filtering.Kalman;
-using MathNet.Numerics;
-using MathNet.Numerics.LinearAlgebra;
-using Orleans.Runtime;
-using System.Runtime.CompilerServices;
+﻿using Orleans.Runtime;
+using System.Numerics;
 
 namespace Orleans.BalancedResourcePlacement;
 
@@ -15,73 +12,33 @@ public record struct ResourceStatistics(
 
 public sealed class SiloRuntimeStatisticsFilter
 {
-    private const int Dimensions = 3;
-
-    private readonly Matrix<double> F = Matrix<double>.Build.DenseIdentity(Dimensions);
-    private readonly Matrix<double> H = Matrix<double>.Build.DenseIdentity(Dimensions);
-    private readonly Matrix<double> R = Matrix<double>.Build.DenseIdentity(Dimensions);
-
-    private readonly DiscreteKalmanFilter filter;
-    private readonly KalmanFilter kalmanFilter;
-
-    public SiloRuntimeStatisticsFilter()
-    {
-        //var initialState = Matrix<double>.Build.DenseOfColumnVectors(Vector<double>.Build.Dense(Dimensions, 0.0));
-        //var initialCovariance = Matrix<double>.Build.DenseIdentity(Dimensions);
-
-        //filter = new(initialState, initialCovariance);
-
-        kalmanFilter = new();
-    }
+    private readonly KalmanFilter<float> cpuUsageFilter = new();
+    private readonly KalmanFilter<float> availableMemoryFilter = new();
+    private readonly KalmanFilter<long> memoryUsageFilter = new();
 
     public ResourceStatistics Update(SiloRuntimeStatistics measurement)
     {
-        var esstCpu = kalmanFilter.Filter(measurement.CpuUsage ?? 0f);
+        float estimatedCpuUsage = cpuUsageFilter.Filter(measurement.CpuUsage);
+        float estimatedAvailableMemory = availableMemoryFilter.Filter(measurement.AvailableMemory);
+        long estimatedMemoryUsage = memoryUsageFilter.Filter(measurement.MemoryUsage);
 
-        Matrix<double> z = FromStats(measurement);
-
-        return new(esstCpu,
-            measurement.AvailableMemory,
-            measurement.MemoryUsage,
+        return new(estimatedCpuUsage,
+            estimatedAvailableMemory,
+            estimatedMemoryUsage,
             measurement.TotalPhysicalMemory,
             measurement.IsOverloaded);
     }
-
-    //public ResourceStatistics Update(SiloRuntimeStatistics measurement)
-    //{
-    //    Matrix<double> z = FromStats(measurement);
-
-    //    filter.Predict(F);
-    //    filter.Update(z, H, R);
-
-    //    return ToStats(filter.State, measurement);
-    //}
-
-    private static Matrix<double> FromStats(SiloRuntimeStatistics stats)
-        => Matrix<double>.Build.DenseOfArray(new double[,]
-        {
-            { stats.CpuUsage ?? 0.0 },
-            { stats.AvailableMemory ?? 0.0 },
-            { stats.MemoryUsage ?? 0.0 }
-        });
-
-    private static ResourceStatistics ToStats(Matrix<double> matrix, SiloRuntimeStatistics measurement)
-        => new(
-            CpuUsage: (float)matrix[0, 0],
-            AvailableMemory: (float)matrix[1, 0],
-            MemoryUsage: (long)matrix[2, 0],
-            TotalPhysicalMemory: measurement.TotalPhysicalMemory,
-            IsOverloaded: measurement.IsOverloaded);
 }
 
-internal sealed class KalmanFilter
+internal sealed class KalmanFilter<T> 
+    where T : unmanaged, INumber<T>
 {
-    private const float measurementNoiseCovariance = 1f;
+    private readonly T measurementNoiseCovariance = T.One;
 
-    private float estimate = 0f;
-    private float errorCovariance = 1f;
+    private T estimate = T.Zero;
+    private T errorCovariance = T.One;
 
-    public float Filter(float measurement)
+    public T Filter(T? measurement)
     {
         // Prediction Step:
         // -------------------------------------------
@@ -91,7 +48,7 @@ internal sealed class KalmanFilter
         //  2. The state transition matrix (A) is unitary (no transitions are expected, there state won't change),
         //     therefor A = 1 (e.g: cpu usage change can't be known)
         // Simplification: x_k = x_k-1
-        float predictedEstimate = estimate;
+        T predictedEstimate = estimate;
 
         // Formula: P_k = A * P_k-1 * A_T + Q 
         // Assumptions:
@@ -99,7 +56,7 @@ internal sealed class KalmanFilter
         //  2. The process noise covariance matrix (Q) is unitary (systems state is not expected to deviate from the model)
         //     therefor Q = 0 (see: Assumption 2 above)
         // Simplification: P_k = P_k-1
-        float predictedErrorCovariance = errorCovariance;
+        T predictedErrorCovariance = errorCovariance;
 
 
         // Correction Step:
@@ -111,12 +68,12 @@ internal sealed class KalmanFilter
         //  2. The measurement covariance matrix (R) is unitary (must be as choosing 0 would mean would lead all the consequent estimates to remaining as the initial state)
         //     therefor R = 1
         // Simplification: K_k = P_k / (P_k + 1)
-        float gain = predictedErrorCovariance / (predictedErrorCovariance + measurementNoiseCovariance);
+        T gain = predictedErrorCovariance / (predictedErrorCovariance + measurementNoiseCovariance);
 
         // Formula: x_k+1 = x_k + K_k * (z_k - x_k); where z_k is the new 'measurement'
-        estimate = predictedEstimate + gain * (measurement - predictedEstimate);
+        estimate = predictedEstimate + gain * (measurement ?? T.Zero - predictedEstimate);
         // Formula: P_k+1 = (1 - K_k) * P_k
-        errorCovariance = (1f - gain) * predictedErrorCovariance;
+        errorCovariance = (T.One - gain) * predictedErrorCovariance;
 
         return estimate;
     }
