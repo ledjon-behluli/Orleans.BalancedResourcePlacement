@@ -24,6 +24,7 @@ using (StreamWriter writer = new("output.txt"))
     }
 
     writer.WriteLine();
+
     bool _1stFlag = false;
     bool _2ndFlag = false;
 
@@ -32,25 +33,25 @@ using (StreamWriter writer = new("output.txt"))
         Console.WriteLine("Iteration: " + i);
 
         float filteredCpuUsage = filter.Filter(simulatedCpuUsage);
-        string diff = $"{Math.Round(Math.Abs((filteredCpuUsage - simulatedCpuUsage) / simulatedCpuUsage) * 100.0, 1)}%";
+        float diff = 100.0f * Math.Abs((filteredCpuUsage - simulatedCpuUsage) / simulatedCpuUsage);
 
         table.AddRow(
             (i + 1).ToString(),
             Formatter.ForDisplay(simulatedCpuUsage),
             Formatter.ForDisplay(filteredCpuUsage),
-            diff);
+            Formatter.ForDisplay(diff) + "%");
 
         WriteRow(writer,
             (i + 1).ToString(),
             Formatter.ForDisplay(simulatedCpuUsage),
             Formatter.ForDisplay(filteredCpuUsage),
-            diff);
+            Formatter.ForDisplay(diff) + "%");
 
-        //Algorithm.LinearIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
+        Algorithm.LinearIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
         //Algorithm.LinearIncreaseSharpDecrease(ref cpuIncrement, ref simulatedCpuUsage);
         //Algorithm.ExponentialIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
         //Algorithm.LinearIncreaseWithSuddenPeriodicBouncingFluctuations(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag);
-        Algorithm.LinearIncreaseWithSuddenSingleDownUpFluctuation(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag, ref _2ndFlag);
+        //Algorithm.LinearIncreaseWithSuddenSingleDownUpFluctuation(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag, ref _2ndFlag);
     }
 }
 
