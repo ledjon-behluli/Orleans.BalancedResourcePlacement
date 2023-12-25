@@ -5,7 +5,7 @@ using Orleans.BalancedResourcePlacement;
 const int iterations = 2500;
 const bool save = true;
 
-var filter = new DKalmanFilter<float>();
+var filter = new KalmanFilter<float>();
 var table = new Table();
 
 table.AddColumn("Iteration");
