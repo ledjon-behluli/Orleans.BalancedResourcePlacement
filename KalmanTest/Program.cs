@@ -1,39 +1,24 @@
-﻿using Bogus;
-using Microsoft.Extensions.Options;
-using Orleans.BalancedResourcePlacement;
-using Orleans.Configuration;
-using Orleans.Runtime;
-using Orleans.Statistics;
-using Spectre.Console;
+﻿using Spectre.Console;
 using System.Reflection;
+using Orleans.BalancedResourcePlacement;
 
-const int iterations = 10_000;
+const int iterations = 10000;
+const bool save = true;
 
-//var noisySin = Math.Sin(k * 3.14 * 5 / 180) + (double)rnd.Next(50) / 100;
-
-var filter = new SiloRuntimeStatisticsFilter();
-var faker = new Faker();
+var filter = new KalmanFilter<float>();
 var table = new Table();
 
 table.AddColumn("Iteration");
-
-table.AddColumn("CpuUsage (Simulated)");
-table.AddColumn("CpuUsage (Filtered)");
-table.AddColumn("Difference (%)");
-
-table.AddColumn("MemoryUsage (Simulated)");
-table.AddColumn("MemoryUsage (Filtered)");
-table.AddColumn("Difference (%)");
+table.AddColumn("Simulated");
+table.AddColumn("Filtered");
+table.AddColumn("Diff (%)");
 
 float cpuIncrement = 0.1f;
-long memoryIncrement = 10 * Constants._1MB;
-
-float currentCpuUsage = 5.0f;
-long currentMemoryUsage = (long)(0.1 * Constants._16GB);
+float simulatedCpuUsage = 5.0f;
 
 using (StreamWriter writer = new("output.txt"))
 {
-    foreach (string column in new string[] { "Iteration", "CpuUsage (Simulated)", "CpuUsage (Filtered)", "Difference (%)" })
+    foreach (string column in new string[] { "Iteration", "Simulated", "Filtered", "Diff (%)" })
     {
         writer.Write(column + "\t");
     }
@@ -46,97 +31,52 @@ using (StreamWriter writer = new("output.txt"))
     {
         Console.WriteLine("Iteration: " + i);
 
-        var simulatedStats = CreateSiloRuntimeStatistics(ref currentCpuUsage, ref currentMemoryUsage);
-        var filteredStats = filter.Update(simulatedStats);
-        var diffs = GetDifferencePercentage(simulatedStats, filteredStats);
+        float filteredCpuUsage = filter.Filter(simulatedCpuUsage);
+        string diff = $"{Math.Round(Math.Abs((filteredCpuUsage - simulatedCpuUsage) / simulatedCpuUsage) * 100.0, 1)}%";
 
         table.AddRow(
             (i + 1).ToString(),
-            Formatter.ForDisplay(simulatedStats.CpuUsage),
-            Formatter.ForDisplay(filteredStats.CpuUsage),
-            diffs.Item1,
-            Formatter.ForDisplay(simulatedStats.MemoryUsage),
-            Formatter.ForDisplay(filteredStats.MemoryUsage),
-            diffs.Item2);
+            Formatter.ForDisplay(simulatedCpuUsage),
+            Formatter.ForDisplay(filteredCpuUsage),
+            diff);
 
         WriteRow(writer,
             (i + 1).ToString(),
-            Formatter.ForDisplay(simulatedStats.CpuUsage),
-            Formatter.ForDisplay(filteredStats.CpuUsage),
-            diffs.Item1);
+            Formatter.ForDisplay(simulatedCpuUsage),
+            Formatter.ForDisplay(filteredCpuUsage),
+            diff);
 
-        //Algorithm.SteadyIncreaseSteadyDecrease(ref cpuIncrement, ref memoryIncrement, ref currentCpuUsage, ref currentMemoryUsage);
-        //Algorithm.SteadyIncreaseSharpDecrease(ref cpuIncrement, ref memoryIncrement, ref currentCpuUsage, ref currentMemoryUsage);
-        //Algorithm.ExponentialIncreaseLinearDecrease(ref cpuIncrement, ref memoryIncrement, ref currentCpuUsage, ref currentMemoryUsage);
-        //Algorithm.LinearIncreaseWithSuddenPeriodicBouncingFluctuations(ref cpuIncrement, ref memoryIncrement, ref currentCpuUsage, ref currentMemoryUsage, ref bouncing);
-        Algorithm.LinearIncreaseWithSuddenSingleDownUpFluctuation(ref cpuIncrement, ref memoryIncrement, ref currentCpuUsage, ref currentMemoryUsage, ref _1stFlag, ref _2ndFlag);
+        //Algorithm.LinearIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
+        //Algorithm.LinearIncreaseSharpDecrease(ref cpuIncrement, ref simulatedCpuUsage);
+        //Algorithm.ExponentialIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
+        //Algorithm.LinearIncreaseWithSuddenPeriodicBouncingFluctuations(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag);
+        Algorithm.LinearIncreaseWithSuddenSingleDownUpFluctuation(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag, ref _2ndFlag);
     }
 }
 
-//Console.WriteLine("Enter any key to see results...");
-//Console.ReadKey();
-
-//AnsiConsole.Write(table);
-//Console.ReadKey();
-
-
-SaveValuesForPlotting(iterations);
-
-static SiloRuntimeStatistics CreateSiloRuntimeStatistics(ref float currentCpuUsage, ref long currentMemoryUsage)
+if (save)
 {
-    var constructorInfo = typeof(SiloRuntimeStatistics)
-        .GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
-        .FirstOrDefault();
-
-    if (constructorInfo != null)
-    {
-        var appStats = new FakeAppEnvironmentStatistics(currentMemoryUsage);
-        var hostStats = new FakeHostEnvironmentStatistics(currentCpuUsage, appStats.MemoryUsage);
-
-        var parameters = new object[]
-        {
-            0,
-            0,
-            appStats,
-            hostStats,
-            new OptionsWrapper<LoadSheddingOptions>(new LoadSheddingOptions() { LoadSheddingEnabled = false }),
-            DateTime.UtcNow
-        };
-
-        return (SiloRuntimeStatistics)constructorInfo.Invoke(parameters);
-    }
-
-    throw new InvalidOperationException("Could not find the internal constructor of SiloRuntimeStatistics");
+    SaveValuesForPlotting(iterations);
 }
-
-static (string, string) GetDifferencePercentage(SiloRuntimeStatistics simulated, ResourceStatistics filtered)
+else
 {
-    var cpu = Diff(simulated.CpuUsage, filtered.CpuUsage);
-    var memoryUsage = Diff(simulated.MemoryUsage, filtered.MemoryUsage);
+    Console.WriteLine("Enter any key to see results...");
+    Console.ReadKey();
 
-    return ($"{cpu}%", $"{memoryUsage}%");
-
-    static double Diff(float? simulated, float? filtered)
-    {
-        if (simulated.HasValue && filtered.HasValue)
-        {
-            return Math.Round(Math.Abs((filtered.Value - simulated.Value) / simulated.Value) * 100.0, 1);
-        }
-
-        return 0.0;
-    }
+    AnsiConsole.Write(table);
+    Console.ReadKey();
 }
 
 static void SaveValuesForPlotting(int rowCount)
 {
-    string filePath = "C:\\Code Repositories\\Orleans.BalancedResourcePlacement\\KalmanTest\\bin\\Debug\\net8.0\\";
+    string? filePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
     string[] iteration = new string[rowCount];
     string[] cpuUsageSimulated = new string[rowCount];
     string[] cpuUsageFiltered = new string[rowCount];
     string[] differencePercentage = new string[rowCount];
 
-    using (StreamReader reader = new(filePath + "output.txt"))
+    using (StreamReader reader = new(filePath + "\\output.txt"))
     {
         reader.ReadLine();
 
@@ -156,12 +96,12 @@ static void SaveValuesForPlotting(int rowCount)
         }
     }
 
-    using (StreamWriter writer = new(filePath + "values.txt"))
+    using (StreamWriter writer = new(filePath + "\\values.txt"))
     {
         writer.WriteLine("iterations = [" + string.Join(", ", iteration) + "]");
-        writer.WriteLine("cpu_usage_simulated = [" + string.Join(", ", cpuUsageSimulated) + "]");
-        writer.WriteLine("cpu_usage_filtered = [" + string.Join(", ", cpuUsageFiltered) + "]");
-        writer.WriteLine("difference_percentage = [" + string.Join(", ", differencePercentage) + "]");
+        writer.WriteLine("simulated = [" + string.Join(", ", cpuUsageSimulated) + "]");
+        writer.WriteLine("filtered = [" + string.Join(", ", cpuUsageFiltered) + "]");
+        writer.WriteLine("diff_perc = [" + string.Join(", ", differencePercentage) + "]");
     }
 }
 
@@ -174,24 +114,6 @@ static void WriteRow(StreamWriter writer, params string[] values)
     writer.WriteLine();
 }
 
-class FakeAppEnvironmentStatistics(long? memUsage) : IAppEnvironmentStatistics
-{
-    public long? MemoryUsage { get; } = memUsage;
-}
-
-class FakeHostEnvironmentStatistics(float? cpuUsage, long? memUsage) : IHostEnvironmentStatistics
-{
-    public long? TotalPhysicalMemory { get; } = Constants._16GB;
-    public float? CpuUsage { get; } = cpuUsage;
-    public long? AvailableMemory { get; } = Constants._16GB - memUsage;
-}
-
-class Constants
-{
-    public const long _16GB = (long)16 * 1024 * 1024 * 1024;
-    public const long _1MB = (long)1024 * 1024;
-}
-
 class Formatter
 {
     public static string ForDisplay(float? value) => Math.Round(value ?? 0, 1).ToString();
@@ -201,106 +123,69 @@ class Algorithm
 {
     public static void LinearIncreaseLinearDecrease(
         ref float cpuIncrement, 
-        ref long memoryIncrement, 
-        ref float currentCpuUsage, 
-        ref long currentMemoryUsage)
+        ref float cpuUsage)
     {
-        if (currentCpuUsage > 75.0f)
+        if (cpuUsage > 75.0f)
         {
             cpuIncrement = -0.1f;
         }
-        if (currentCpuUsage < 40.0f)
+        if (cpuUsage < 40.0f)
         {
             cpuIncrement = 0.1f;
         }
 
-        currentCpuUsage += cpuIncrement;
-
-        if (currentMemoryUsage > (long)(0.75 * Constants._16GB))
-        {
-            memoryIncrement = -10 * Constants._1MB;
-        }
-        if (currentMemoryUsage < (long)(0.40 * Constants._16GB))
-        {
-            memoryIncrement = 10 * Constants._1MB;
-        }
-
-        currentMemoryUsage += memoryIncrement;
+        cpuUsage += cpuIncrement;
     }
 
     public static void LinearIncreaseSharpDecrease(
         ref float cpuIncrement,
-        ref long memoryIncrement,
-        ref float currentCpuUsage,
-        ref long currentMemoryUsage)
+        ref float cpuUsage)
     {
-        if (currentCpuUsage > 75.0f)
+        if (cpuUsage > 75.0f)
         {
-            currentCpuUsage = 40.0f;
+            cpuUsage = 40.0f;
         }
 
-        currentCpuUsage += cpuIncrement;
-
-        if (currentMemoryUsage > (long)(0.75 * Constants._16GB))
-        {
-            currentMemoryUsage = (long)(0.40 * Constants._16GB);
-        }
-
-        currentMemoryUsage += memoryIncrement;
+        cpuUsage += cpuIncrement;
     }
 
     public static void ExponentialIncreaseLinearDecrease(
         ref float cpuIncrement,
-        ref long memoryIncrement,
-        ref float currentCpuUsage,
-        ref long currentMemoryUsage)
+        ref float cpuUsage)
     {
-        if (currentCpuUsage > 75.0f)
+        if (cpuUsage > 75.0f)
         {
             cpuIncrement = -0.01f;
         }
-        if (currentCpuUsage < 40.0f)
+        if (cpuUsage < 40.0f)
         {
-            cpuIncrement = 0.005f * currentCpuUsage;
+            cpuIncrement = 0.005f * cpuUsage;
         }
 
-        currentCpuUsage += cpuIncrement;
-
-        if (currentMemoryUsage > (long)(0.75 * Constants._16GB))
-        {
-            memoryIncrement = (long)-0.01 * Constants._1MB;
-        }
-        else
-        {
-            memoryIncrement = (long)(0.005 * currentMemoryUsage);
-        }
-
-        currentMemoryUsage += memoryIncrement;
+        cpuUsage += cpuIncrement;
     }
 
     public static void LinearIncreaseWithSuddenPeriodicBouncingFluctuations(
         ref float cpuIncrement,
-        ref long memoryIncrement,
-        ref float currentCpuUsage,
-        ref long currentMemoryUsage,
+        ref float cpuUsage,
         ref bool bouncing)
     {
-        if (currentCpuUsage >= 100.0f)
+        if (cpuUsage >= 100.0f)
         {
             return;
         }
 
-        if (bouncing && currentCpuUsage > 45.0f)
+        if (bouncing && cpuUsage > 45.0f)
         {
-            cpuIncrement = -0.005f * currentCpuUsage;
+            cpuIncrement = -0.005f * cpuUsage;
         }
-        else if (currentCpuUsage > 50.0f && !bouncing)
+        else if (cpuUsage > 50.0f && !bouncing)
         {
             bouncing = true;
         }
-        else if (currentCpuUsage < 45.0f && bouncing)
+        else if (cpuUsage < 45.0f && bouncing)
         {
-            currentCpuUsage = 50.0f;
+            cpuUsage = 50.0f;
             cpuIncrement = 0.05f;
             bouncing = false;
         }
@@ -309,46 +194,54 @@ class Algorithm
             cpuIncrement = 0.05f;
         }
 
-        currentCpuUsage += cpuIncrement;
+        cpuUsage += cpuIncrement;
     }
 
     public static void LinearIncreaseWithSuddenSingleDownUpFluctuation(
        ref float cpuIncrement,
-       ref long memoryIncrement,
-       ref float currentCpuUsage,
-       ref long currentMemoryUsage,
+       ref float cpuUsage,
        ref bool jumped1,
        ref bool jumped2)
     {
-        if (currentCpuUsage >= 100.0f)
+        if (cpuUsage >= 100.0f)
         {
             return;
         }
 
-        if (jumped1 && currentCpuUsage > 40.0f)
+        if (jumped1 && cpuUsage > 40.0f)
         {
-            cpuIncrement = -0.005f * currentCpuUsage;
+            cpuIncrement = Multiply(-cpuUsage);
         }
-        else if (currentCpuUsage > 60.0f && !jumped1 && !jumped2)
+        else if (cpuUsage > 60.0f && !jumped1 && !jumped2)
         {
             jumped1 = true;
         }
-        else if (currentCpuUsage < 40.0f && jumped1)
+        else if (cpuUsage < 40.0f && jumped1)
         {
-            cpuIncrement = 0.005f * currentCpuUsage;
+            cpuIncrement = Multiply(cpuUsage);
 
             jumped1 = false;
             jumped2 = true;
         }
-        else if (currentCpuUsage > 40.0f && currentCpuUsage < 60.0f && !jumped1 && jumped2)
+        else if (cpuUsage > 40.0f && cpuUsage < 60.0f && !jumped1 && jumped2)
         {
-            cpuIncrement = 0.005f * currentCpuUsage;
+            cpuIncrement = Multiply(cpuUsage);
         }
         else
         {
             cpuIncrement = 0.05f;
         }
 
-        currentCpuUsage += cpuIncrement;
+        cpuUsage += cpuIncrement;
+
+        static float Multiply(float cpuUsage)
+        {
+            return 0.005f * cpuUsage;
+        }
+    }
+
+    public static void Sinosoid()
+    {
+        //var noisySin = Math.Sin(k * 3.14 * 5 / 180) + (double)rnd.Next(50) / 100;
     }
 }
