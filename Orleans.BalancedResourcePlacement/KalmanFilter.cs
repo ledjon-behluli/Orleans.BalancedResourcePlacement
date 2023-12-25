@@ -7,6 +7,9 @@ internal sealed class KalmanFilter<T> where T : unmanaged, INumber<T>
     private T priorEstimate = T.Zero;
     private T priorErrorCovariance = T.One;
 
+    private List<T> gains = [];
+    public List<T> Gains => gains.Distinct().ToList();
+
     public T Filter(T? measurement)
     {
         // Prediction Step:
@@ -42,6 +45,7 @@ internal sealed class KalmanFilter<T> where T : unmanaged, INumber<T>
         // Formula: x_k+1 = x_k + K_k * (z_k - x_k); where z_k is the new 'measurement'
         priorEstimate = estimate + gain * ((measurement ?? T.Zero) - estimate);
         // Formula: P_k+1 = (1 - K_k) * P_k
+        // NOTE: [1 - gain] can never become 0, because 'gain' can only be 1 when 'errorCovariance' is infinity.
         priorErrorCovariance = (T.One - gain) * errorCovariance;
 
         return priorEstimate;
