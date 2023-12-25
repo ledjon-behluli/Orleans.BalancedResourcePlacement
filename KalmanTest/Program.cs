@@ -2,10 +2,10 @@
 using System.Reflection;
 using Orleans.BalancedResourcePlacement;
 
-const int iterations = 10000;
+const int iterations = 2500;
 const bool save = true;
 
-var filter = new KalmanFilter<float>();
+var filter = new DKalmanFilter<float>();
 var table = new Table();
 
 table.AddColumn("Iteration");
@@ -47,11 +47,11 @@ using (StreamWriter writer = new("output.txt"))
             Formatter.ForDisplay(filteredCpuUsage),
             Formatter.ForDisplay(diff) + "%");
 
-        Algorithm.LinearIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
+        //Algorithm.LinearIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
         //Algorithm.LinearIncreaseSharpDecrease(ref cpuIncrement, ref simulatedCpuUsage);
         //Algorithm.ExponentialIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
         //Algorithm.LinearIncreaseWithSuddenPeriodicBouncingFluctuations(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag);
-        //Algorithm.LinearIncreaseWithSuddenSingleDownUpFluctuation(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag, ref _2ndFlag);
+        Algorithm.LinearIncreaseWithSuddenSingleDownUpFluctuation(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag, ref _2ndFlag);
     }
 }
 

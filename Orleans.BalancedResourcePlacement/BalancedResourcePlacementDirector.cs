@@ -104,9 +104,9 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
                 statistics.IsOverloaded), 
             updateValueFactory: (_, _) =>
             {
-                float estimatedCpuUsage = cpuUsageFilter.Filter(statistics.CpuUsage);
-                float estimatedAvailableMemory = availableMemoryFilter.Filter(statistics.AvailableMemory);
-                long estimatedMemoryUsage = memoryUsageFilter.Filter(statistics.MemoryUsage);
+                float estimatedCpuUsage = cpuUsageFilter.Filter(statistics.CpuUsage ?? 0);
+                float estimatedAvailableMemory = availableMemoryFilter.Filter(statistics.AvailableMemory ?? 0);
+                long estimatedMemoryUsage = memoryUsageFilter.Filter(statistics.MemoryUsage ?? 0);
 
                 return new ResourceStatistics(
                     estimatedCpuUsage,
