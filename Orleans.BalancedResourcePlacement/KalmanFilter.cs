@@ -40,7 +40,7 @@ internal sealed class KalmanFilter<T> where T : unmanaged, INumber<T>
         T gain = errorCovariance / (errorCovariance + T.One);
 
         // Formula: x_k+1 = x_k + K_k * (z_k - x_k); where z_k is the new 'measurement'
-        priorEstimate = estimate + gain * (measurement ?? T.Zero - estimate);
+        priorEstimate = estimate + gain * ((measurement ?? T.Zero) - estimate);
         // Formula: P_k+1 = (1 - K_k) * P_k
         priorErrorCovariance = (T.One - gain) * errorCovariance;
 
