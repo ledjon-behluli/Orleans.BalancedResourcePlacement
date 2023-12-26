@@ -5,7 +5,7 @@ using Orleans.BalancedResourcePlacement;
 const int iterations = 2500;
 const bool save = true;
 
-var filter = new KalmanFilter<float>();
+var filter = new StatisticsFilter<float>();
 var table = new Table();
 
 table.AddColumn("Iteration");
@@ -27,6 +27,14 @@ using (StreamWriter writer = new("output.txt"))
 
     bool _1stFlag = false;
     bool _2ndFlag = false;
+    List<(int, int)> trafficHours =
+          [(0, 1), (16, 24), (47, 48)];
+          //[(0, 8), (20, 21), (40, 48)];
+          //[(0, 2), (6, 8), (12, 14), (18, 22)];
+          //[(0, 2), (4, 6), (8, 10), (12, 14), (16, 18), (20, 22)];
+          //[(0, 1), (3, 4), (6, 7), (9, 10), (12, 13), (15, 16), (18, 19), (21, 22), (24, 25), (27, 28), (30, 31), (33, 34), (36, 37), (39, 40), (42, 43), (45, 46), (48, 49)];
+    int maxHour = trafficHours.SelectMany(pair => new[] { pair.Item1, pair.Item2 }).Max();
+    var isTrafficTime = Algorithm.IsHighTraffic(trafficHours);
 
     for (int i = 0; i < iterations; i++)
     {
@@ -51,13 +59,14 @@ using (StreamWriter writer = new("output.txt"))
         //Algorithm.LinearIncreaseSharpDecrease(ref cpuIncrement, ref simulatedCpuUsage);
         //Algorithm.ExponentialIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
         //Algorithm.LinearIncreaseWithSuddenPeriodicBouncingFluctuations(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag);
-        Algorithm.LinearIncreaseWithSuddenSingleDownUpFluctuation(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag, ref _2ndFlag);
+        //Algorithm.LinearIncreaseWithSuddenSingleDownUpFluctuation(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag, ref _2ndFlag);
+        Algorithm.SimulateDailyCpuUsage(ref simulatedCpuUsage, i, iterations, maxHour, isTrafficTime);
     }
 }
 
 if (save)
 {
-    SaveValuesForPlotting(iterations);
+    SaveSamplingForPlotting(iterations);
 }
 else
 {
@@ -68,7 +77,7 @@ else
     Console.ReadKey();
 }
 
-static void SaveValuesForPlotting(int rowCount)
+static void SaveSamplingForPlotting(int rowCount)
 {
     string? filePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
@@ -97,7 +106,7 @@ static void SaveValuesForPlotting(int rowCount)
         }
     }
 
-    using (StreamWriter writer = new(filePath + "\\values.txt"))
+    using (StreamWriter writer = new(filePath + "\\samplings.txt"))
     {
         writer.WriteLine("iterations = [" + string.Join(", ", iteration) + "]");
         writer.WriteLine("simulated = [" + string.Join(", ", cpuUsageSimulated) + "]");
@@ -123,7 +132,7 @@ class Formatter
 class Algorithm
 {
     public static void LinearIncreaseLinearDecrease(
-        ref float cpuIncrement, 
+        ref float cpuIncrement,
         ref float cpuUsage)
     {
         if (cpuUsage > 75.0f)
@@ -209,7 +218,7 @@ class Algorithm
             return;
         }
 
-        if (jumped1 && cpuUsage > 40.0f)
+        if (jumped1 && cpuUsage > 10.0f)
         {
             cpuIncrement = Multiply(-cpuUsage);
         }
@@ -217,14 +226,14 @@ class Algorithm
         {
             jumped1 = true;
         }
-        else if (cpuUsage < 40.0f && jumped1)
+        else if (cpuUsage < 10.0f && jumped1)
         {
             cpuIncrement = Multiply(cpuUsage);
 
             jumped1 = false;
             jumped2 = true;
         }
-        else if (cpuUsage > 40.0f && cpuUsage < 60.0f && !jumped1 && jumped2)
+        else if (cpuUsage > 10.0f && cpuUsage < 60.0f && !jumped1 && jumped2)
         {
             cpuIncrement = Multiply(cpuUsage);
         }
@@ -237,12 +246,65 @@ class Algorithm
 
         static float Multiply(float cpuUsage)
         {
-            return 0.005f * cpuUsage;
+            return 0.05f * cpuUsage;
         }
     }
 
-    public static void Sinosoid()
+    public static void SimulateDailyCpuUsage(
+        ref float cpuUsage,
+        int currentIteration,
+        int totalIterations,
+        int maxHourSpan,
+        Func<int, bool> isHighTraffic)
     {
-        //var noisySin = Math.Sin(k * 3.14 * 5 / 180) + (double)rnd.Next(50) / 100;
+        float percentOfDay = (float)currentIteration / totalIterations;
+        int hour = (int)(maxHourSpan * percentOfDay) % maxHourSpan;
+
+        if (isHighTraffic(hour))
+        {
+            cpuUsage = 80f;
+            cpuUsage = SuperImposeNoisySin(
+                noiseAmplitudeMin: 2.0f,
+                noiseAmplitudeMax: 8.0f,
+                cpuUsage: ref cpuUsage);
+        }
+        else
+        {
+            cpuUsage = 20f;
+            cpuUsage = SuperImposeNoisySin(
+                noiseAmplitudeMin: 0.5f,
+                noiseAmplitudeMax: 2.0f,
+                cpuUsage: ref cpuUsage);
+        }
+
+        if (cpuUsage > 100)
+        {
+            cpuUsage = 100;
+        }
+
+        static float SuperImposeNoisySin(float noiseAmplitudeMin, float noiseAmplitudeMax, ref float cpuUsage)
+        {
+            const float frequency = 0.2f;
+
+            float signalAmplitude = Random.Shared.NextSingle();
+            float noiseAmplitude = noiseAmplitudeMin + (noiseAmplitudeMax * Random.Shared.NextSingle());
+
+            return cpuUsage += (float)(
+                signalAmplitude * Math.Sin(2 * Math.PI * frequency) +
+                noiseAmplitude * Random.Shared.NextSingle());
+        }
     }
+
+    public static Func<int, bool> IsHighTraffic(List<(int, int)> trafficHours)
+        => (currentHour) =>
+        {
+            foreach (var (startHour, endHour) in trafficHours)
+            {
+                if (currentHour >= startHour && currentHour <= endHour)
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
 }

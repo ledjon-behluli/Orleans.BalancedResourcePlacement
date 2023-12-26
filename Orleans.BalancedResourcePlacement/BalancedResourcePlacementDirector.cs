@@ -16,9 +16,9 @@ internal sealed class BalancedResourcePlacementDirector : IPlacementDirector, IS
     private readonly ConcurrentDictionary<SiloAddress, ResourceStatistics> siloStatistics = [];
     private readonly BalancedResourcePlacementOptions options;
 
-    private readonly KalmanFilter<float> cpuUsageFilter = new();
-    private readonly KalmanFilter<float> availableMemoryFilter = new();
-    private readonly KalmanFilter<long> memoryUsageFilter = new();
+    private readonly StatisticsFilter<float> cpuUsageFilter = new();
+    private readonly StatisticsFilter<float> availableMemoryFilter = new();
+    private readonly StatisticsFilter<long> memoryUsageFilter = new();
 
     public BalancedResourcePlacementDirector(BalancedResourcePlacementOptions options)
         => this.options = options;
