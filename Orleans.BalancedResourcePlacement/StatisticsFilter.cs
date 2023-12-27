@@ -4,26 +4,34 @@ namespace Orleans.BalancedResourcePlacement;
 
 internal sealed class StatisticsFilter<T> where T : unmanaged, INumber<T>
 {
-    private bool useFastFilter = true;
+    private bool useFastFilter = false;
 
     private readonly KalmanFilter slowFilter = new(T.Zero);
     private readonly KalmanFilter fastFilter = new(T.CreateChecked(0.01));
 
     public T Filter(T? measurement)
     {
-        T slowEstimate = slowFilter.Filter(measurement);
-        T fastEstimate = fastFilter.Filter(measurement);
+        T _measurement = measurement ?? T.Zero;
 
-        if (measurement > slowEstimate)
+        T slowEstimate = slowFilter.Filter(_measurement);
+        T fastEstimate = fastFilter.Filter(_measurement);
+
+        if (_measurement > slowEstimate)
         {
-            useFastFilter = true;
+            if (!useFastFilter)
+            {
+                fastFilter.CopyState(slowFilter);
+                //fastFilter.SetEstimate(_measurement);
+                useFastFilter = true;
+            }
+            
             return fastEstimate;
         }
         else
         {
             if (useFastFilter)
             {
-                slowFilter.Reset();
+                slowFilter.CopyState(fastFilter);
                 useFastFilter = false;
             }
 
@@ -36,22 +44,36 @@ internal sealed class StatisticsFilter<T> where T : unmanaged, INumber<T>
         private readonly T measurementNoiseCovariance = T.One;
         private readonly T processNoiseCovariance;
 
-        private T priorEstimate;
-        private T priorErrorCovariance;
+        private T priorEstimate = T.Zero;
+        private T priorErrorCovariance = T.One;
 
         public KalmanFilter(T processNoiseCovariance)
         {
             this.processNoiseCovariance = processNoiseCovariance;
-            Reset();
         }
 
-        public void Reset()
+        //public void SetEstimate(T measurement)
+        //{
+        //    priorEstimate = measurement;
+
+        //    // since we got not a measurement we can set the error covariance to 0,
+        //    // indicating we want to fully trust the measurement because we want to,
+        //    // reach the actual signal as fast as possible.
+        //    priorErrorCovariance = T.Zero;  
+        //}
+
+        public void CopyState(KalmanFilter otherFilter)
         {
-            priorEstimate = T.Zero;
-            priorErrorCovariance = T.One;
+            priorEstimate = otherFilter.priorEstimate;
+            priorErrorCovariance = otherFilter.priorErrorCovariance;
         }
 
-        public T Filter(T? measurement)
+        public void BeginReset()
+        {
+            
+        }
+
+        public T Filter(T measurement)
         {
             // Prediction Step:
             // -------------------------------------------
@@ -83,12 +105,42 @@ internal sealed class StatisticsFilter<T> where T : unmanaged, INumber<T>
             T gain = errorCovariance / (errorCovariance + measurementNoiseCovariance);
 
             // Formula: x_k+1 = x_k + K_k * (z_k - x_k); where z_k is the new 'measurement'
-            priorEstimate = estimate + gain * ((measurement ?? T.Zero) - estimate);
+            priorEstimate = estimate + gain * (measurement - estimate);
             // Formula: P_k+1 = (1 - K_k) * P_k
             // NOTE: [1 - gain] can never become 0, because 'gain' can only be 1 when 'errorCovariance' is infinity.
             priorErrorCovariance = (T.One - gain) * errorCovariance;
 
             return priorEstimate;
+        }
+    }
+}
+
+internal static class TaskUtility
+{
+    internal static async Task RepeatEvery(Func<Task> func,
+        TimeSpan interval, CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                await func();
+            }
+            catch
+            {
+
+            }
+
+            Task task = Task.Delay(interval, cancellationToken);
+
+            try
+            {
+                await task;
+            }
+            catch (TaskCanceledException)
+            {
+                return;
+            }
         }
     }
 }
