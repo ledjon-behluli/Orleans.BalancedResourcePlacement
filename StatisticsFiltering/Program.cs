@@ -28,7 +28,7 @@ using (StreamWriter writer = new("output.txt"))
     bool _1stFlag = false;
     bool _2ndFlag = false;
     List<(int, int)> trafficHours =
-          [(0, 1), (16, 24), (47, 48)];
+          [(0, 1), (16, 24), (39, 40)];
           //[(0, 8), (20, 21), (40, 48)];
           //[(0, 2), (6, 8), (12, 14), (18, 22)];
           //[(0, 2), (4, 6), (8, 10), (12, 14), (16, 18), (20, 22)];
