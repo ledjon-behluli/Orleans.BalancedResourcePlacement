@@ -8,7 +8,12 @@ var host = Host.CreateDefaultBuilder(args)
     .UseOrleans(builder =>
         builder
             .UseLocalhostClustering()
-            .AddBalancedResourcePlacement())
+            .AddBalancedResourcePlacement(
+                isGlobal: false, // set to 'true', if you want this strategy to apply globally
+                optionsBuilder: builder =>
+                {
+                    builder.UseAdaptiveFiltering = false;  // set to 'true', if you want to use adaptiv filtering
+                }))
     .ConfigureLogging(builder => builder.AddConsole())
     .Build();
 
@@ -38,7 +43,7 @@ namespace NS
         Task<string> Ping();
     }
 
-    [BalancedResourcePlacement] // or use 'AddBalancedResourcePlacement(isGlobal: true))' if you want this strategy to apply globally
+    [BalancedResourcePlacement] // not needed if 'isGlobal = true'
     public class EchoGrain : Grain, IEchoGrain
     {
         public Task<string> Ping() => Task.FromResult("Pong");

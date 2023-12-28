@@ -19,6 +19,7 @@ public static class Extensions
         BalancedResourcePlacementOptions options = new()
         {
             ResourceStatisticsCollectionPeriod = TimeSpan.FromSeconds(1),
+            UseAdaptiveFiltering = false,
             CpuUsageWeight = 0.3f,
             AvailableMemoryWeight = 0.4f,
             MemoryUsageWeight = 0.2f,
@@ -55,7 +56,8 @@ public static class Extensions
         Type type = typeof(BalancedResourcePlacementStrategy);
 
         siloBuilder.Services.AddSingleton(options);
-        siloBuilder.AddPlacementDirector<BalancedResourcePlacementStrategy, BalancedResourcePlacementDirector>();
+        if (options.UseAdaptiveFiltering) siloBuilder.AddPlacementDirector<BalancedResourcePlacementStrategy, AdaptiveBalancedResourcePlacementDirector>();
+        else siloBuilder.AddPlacementDirector<BalancedResourcePlacementStrategy, BalancedResourcePlacementDirector>();
         siloBuilder.Services.AddSingleton(sp => (ISiloStatisticsListener)sp.GetServiceByKey<Type, IPlacementDirector>(type));
         siloBuilder.Services.AddHostedService<SiloRuntimeStatisticsCollector>();
 
