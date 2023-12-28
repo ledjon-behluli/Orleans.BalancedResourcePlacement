@@ -34,7 +34,7 @@ using (StreamWriter writer = new("output.txt"))
           //[(0, 2), (4, 6), (8, 10), (12, 14), (16, 18), (20, 22)];
           [(0, 1), (3, 4), (6, 7), (9, 10), (12, 13), (15, 16), (18, 19), (21, 22), (24, 25), (27, 28), (30, 31), (33, 34), (36, 37), (39, 40), (42, 43), (45, 46), (48, 49)];
     int maxHour = trafficHours.SelectMany(pair => new[] { pair.Item1, pair.Item2 }).Max();
-    var isTrafficTime = Algorithm.IsHighTraffic(trafficHours);
+    var isTrafficTime = UsagePattern.IsHighTraffic(trafficHours);
 
     for (int i = 0; i < iterations; i++)
     {
@@ -55,12 +55,12 @@ using (StreamWriter writer = new("output.txt"))
             Formatter.ForDisplay(filteredCpuUsage),
             Formatter.ForDisplay(diff) + "%");
 
-        //Algorithm.LinearIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
-        //Algorithm.LinearIncreaseSharpDecrease(ref cpuIncrement, ref simulatedCpuUsage);
-        //Algorithm.ExponentialIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
-        //Algorithm.LinearIncreaseWithSuddenPeriodicBouncingFluctuations(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag);
-        //Algorithm.LinearIncreaseWithSuddenSingleDownUpFluctuation(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag, ref _2ndFlag);
-        Algorithm.SimulateDailyCpuUsage(ref simulatedCpuUsage, i, iterations, maxHour, isTrafficTime);
+        //UsagePattern.LinearIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
+        //UsagePattern.LinearIncreaseSharpDecrease(ref cpuIncrement, ref simulatedCpuUsage);
+        //UsagePattern.ExponentialIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
+        //UsagePattern.LinearIncreaseWithSuddenPeriodicBouncingFluctuations(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag);
+        //UsagePattern.LinearIncreaseWithSuddenSingleDownUpFluctuation(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag, ref _2ndFlag);
+        UsagePattern.SemiPeriodicHighLowTrafficWithRandomness(ref simulatedCpuUsage, i, iterations, maxHour, isTrafficTime);
     }
 }
 
@@ -129,7 +129,7 @@ class Formatter
     public static string ForDisplay(float? value) => Math.Round(value ?? 0, 1).ToString();
 }
 
-class Algorithm
+class UsagePattern
 {
     public static void LinearIncreaseLinearDecrease(
         ref float cpuIncrement,
@@ -250,7 +250,7 @@ class Algorithm
         }
     }
 
-    public static void SimulateDailyCpuUsage(
+    public static void SemiPeriodicHighLowTrafficWithRandomness(
         ref float cpuUsage,
         int currentIteration,
         int totalIterations,
