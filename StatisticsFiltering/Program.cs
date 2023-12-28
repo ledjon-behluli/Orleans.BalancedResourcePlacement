@@ -2,7 +2,7 @@
 using System.Reflection;
 using Orleans.BalancedResourcePlacement;
 
-const int iterations = 250;
+const int iterations = 2500;
 const bool save = true;
 
 var filter = new StatisticsFilter<float>();
@@ -30,9 +30,9 @@ using (StreamWriter writer = new("output.txt"))
     List<(int, int)> trafficHours =
           //[(0, 1), (16, 24), (39, 40)];
           //[(0, 8), (20, 21), (40, 48)];
-          [(0, 2), (6, 8), (12, 14), (18, 22)];
+          //[(0, 2), (6, 8), (12, 14), (18, 22)];
           //[(0, 2), (4, 6), (8, 10), (12, 14), (16, 18), (20, 22)];
-          //[(0, 1), (3, 4), (6, 7), (9, 10), (12, 13), (15, 16), (18, 19), (21, 22), (24, 25), (27, 28), (30, 31), (33, 34), (36, 37), (39, 40), (42, 43), (45, 46), (48, 49)];
+          [(0, 1), (3, 4), (6, 7), (9, 10), (12, 13), (15, 16), (18, 19), (21, 22), (24, 25), (27, 28), (30, 31), (33, 34), (36, 37), (39, 40), (42, 43), (45, 46), (48, 49)];
     int maxHour = trafficHours.SelectMany(pair => new[] { pair.Item1, pair.Item2 }).Max();
     var isTrafficTime = Algorithm.IsHighTraffic(trafficHours);
 
