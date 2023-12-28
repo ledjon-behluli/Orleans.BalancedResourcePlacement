@@ -46,6 +46,14 @@ public sealed class BalancedResourcePlacementOptions
     public TimeSpan ResourceStatisticsCollectionPeriod { get; set; }
 
     /// <summary>
+    /// If <see langword="true"/>; than an <a href="https://en.wikipedia.org/wiki/Online_algorithm">online</a> adaptive filter is used to
+    /// filter out high-frequency components (provides smoothing) and avoid rapid signal drops by translating it into a more linear decay process.
+    /// This all contributes to avoid resource saturation on the silos.
+    /// </summary>
+    /// <remarks><i>It is recommended to pick a lower (more frequent) <see cref="ResourceStatisticsCollectionPeriod"/> when adaptiv filtering is used.</i></remarks>
+    public bool UseAdaptiveFiltering { get; set; }
+
+    /// <summary>
     /// The importance of the CPU utilization by the silo [percentage].
     /// </summary>
     public float CpuUsageWeight { get; set; }

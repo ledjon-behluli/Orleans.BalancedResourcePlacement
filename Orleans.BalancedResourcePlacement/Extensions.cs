@@ -18,7 +18,7 @@ public static class Extensions
     {
         BalancedResourcePlacementOptions options = new()
         {
-            ResourceStatisticsCollectionPeriod = TimeSpan.FromSeconds(5),
+            ResourceStatisticsCollectionPeriod = TimeSpan.FromSeconds(1),
             CpuUsageWeight = 0.3f,
             AvailableMemoryWeight = 0.4f,
             MemoryUsageWeight = 0.2f,
