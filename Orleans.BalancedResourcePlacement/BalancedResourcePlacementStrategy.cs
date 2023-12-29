@@ -43,6 +43,7 @@ public sealed class BalancedResourcePlacementOptions
     /// <summary>
     /// The period of time to wait until the next resource statistics collection is triggered. 
     /// </summary>
+    /// <remarks>Default is 1 second</remarks>
     public TimeSpan ResourceStatisticsCollectionPeriod { get; set; }
 
     /// <summary>
@@ -50,23 +51,30 @@ public sealed class BalancedResourcePlacementOptions
     /// filter out high-frequency components (provides smoothing) and avoid rapid signal drops by translating it into a more linear decay process.
     /// This all contributes to avoid resource saturation on the silos.
     /// </summary>
-    /// <remarks><i>It is recommended to pick a lower (more frequent) <see cref="ResourceStatisticsCollectionPeriod"/> when adaptiv filtering is used.</i></remarks>
+    /// <remarks>
+    /// <para>It is recommended to pick a lower (more frequent) <see cref="ResourceStatisticsCollectionPeriod"/> when adaptiv filtering is used.</para>
+    /// <para>Default is <see langword="false"/></para>
+    /// </remarks>
     public bool UseAdaptiveFiltering { get; set; }
 
     /// <summary>
     /// The importance of the CPU utilization by the silo [percentage].
     /// </summary>
+    /// <remarks>Default is 30%</remarks>
     public float CpuUsageWeight { get; set; }
     /// <summary>
     /// The importance of the amount of memory available to the silo [bytes].
     /// </summary>
+    /// <remarks>Default is 40%</remarks>
     public float AvailableMemoryWeight { get; set; }
     /// <summary>
     /// The importance of the used memory by the silo [bytes].
     /// </summary>
+    /// <remarks>Default is 20%</remarks>
     public float MemoryUsageWeight { get; set; }
     /// <summary>
     /// The importance of the total physical memory available to the silo [bytes].
     /// </summary>
+    /// <remarks>Default is 10%</remarks>
     public float TotalPhysicalMemoryWeight { get; set; }
 }
