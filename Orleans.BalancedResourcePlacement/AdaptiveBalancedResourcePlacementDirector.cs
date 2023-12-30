@@ -4,9 +4,9 @@ namespace Orleans.BalancedResourcePlacement;
 
 internal sealed class AdaptiveBalancedResourcePlacementDirector : BalancedResourcePlacementDirector
 {
-    private readonly StatisticsFilter<float> cpuUsageFilter = new();
-    private readonly StatisticsFilter<float> availableMemoryFilter = new();
-    private readonly StatisticsFilter<long> memoryUsageFilter = new();
+    private readonly DualModeKalmanFilter<float> cpuUsageFilter = new();
+    private readonly DualModeKalmanFilter<float> availableMemoryFilter = new();
+    private readonly DualModeKalmanFilter<long> memoryUsageFilter = new();
 
     public AdaptiveBalancedResourcePlacementDirector(BalancedResourcePlacementOptions options)
         : base(options) { }

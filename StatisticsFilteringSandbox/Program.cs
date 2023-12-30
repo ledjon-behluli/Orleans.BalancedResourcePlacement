@@ -4,7 +4,7 @@ using Orleans.BalancedResourcePlacement;
 
 const int iterations = 1000;
 
-var filter = new StatisticsFilter<float>();
+var filter = new DualModeKalmanFilter<float>();
 
 float cpuIncrement = 0.1f;
 float simulatedCpuUsage = 5.0f;

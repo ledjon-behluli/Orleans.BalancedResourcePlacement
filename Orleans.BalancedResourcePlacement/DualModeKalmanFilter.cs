@@ -2,7 +2,7 @@
 
 namespace Orleans.BalancedResourcePlacement;
 
-internal sealed class StatisticsFilter<T> where T : unmanaged, INumber<T>
+internal sealed class DualModeKalmanFilter<T> where T : unmanaged, INumber<T>
 {
     private readonly KalmanFilter slowFilter = new(T.Zero);
     private readonly KalmanFilter fastFilter = new(T.CreateChecked(0.01));
