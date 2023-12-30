@@ -3,7 +3,7 @@ using System.Reflection;
 using Orleans.BalancedResourcePlacement;
 
 const bool saveResultForPlotting = true;
-const int iterations = 2500;
+const int iterations = 1000;
 
 var filter = new StatisticsFilter<float>();
 
@@ -13,10 +13,10 @@ float simulatedCpuUsage = 5.0f;
 bool _1stFlag = false;
 bool _2ndFlag = false;
 List<(int, int)> trafficHours =
-      //[(0, 1), (16, 24), (39, 40)];
+      [(0, 1), (16, 24), (39, 40)];
       //[(0, 8), (20, 21), (40, 48)];
       //[(0, 2), (6, 8), (12, 14), (18, 22)];
-      [(0, 2), (4, 6), (8, 10), (12, 14), (16, 18), (20, 22)];
+      //[(0, 2), (4, 6), (8, 10), (12, 14), (16, 18), (20, 22)];
       //[(0, 1), (3, 4), (6, 7), (9, 10), (12, 13), (15, 16), (18, 19), (21, 22), (24, 25), (27, 28), (30, 31), (33, 34), (36, 37), (39, 40), (42, 43), (45, 46), (48, 49)];
 int maxHour = trafficHours.SelectMany(pair => new[] { pair.Item1, pair.Item2 }).Max();
 
@@ -289,7 +289,7 @@ class UsagePattern
         if (IsHighTraffic(hour, trafficHours))
         {
             cpuUsage = 80f;
-            cpuUsage = SuperImposeNoisySin(
+            SuperImposeNoisySin(
                 noiseAmplitudeMin: 2.0f,
                 noiseAmplitudeMax: 8.0f,
                 cpuUsage: ref cpuUsage);
@@ -297,7 +297,7 @@ class UsagePattern
         else
         {
             cpuUsage = 20f;
-            cpuUsage = SuperImposeNoisySin(
+            SuperImposeNoisySin(
                 noiseAmplitudeMin: 0.5f,
                 noiseAmplitudeMax: 2.0f,
                 cpuUsage: ref cpuUsage);
@@ -308,14 +308,14 @@ class UsagePattern
             cpuUsage = 100;
         }
 
-        static float SuperImposeNoisySin(float noiseAmplitudeMin, float noiseAmplitudeMax, ref float cpuUsage)
+        static void SuperImposeNoisySin(float noiseAmplitudeMin, float noiseAmplitudeMax, ref float cpuUsage)
         {
             const float frequency = 0.2f;
 
             float signalAmplitude = Random.Shared.NextSingle();
             float noiseAmplitude = noiseAmplitudeMin + (noiseAmplitudeMax * Random.Shared.NextSingle());
 
-            return cpuUsage += (float)(
+            cpuUsage += (float)(
                 signalAmplitude * Math.Sin(2 * Math.PI * frequency) +
                 noiseAmplitude * Random.Shared.NextSingle());
         }

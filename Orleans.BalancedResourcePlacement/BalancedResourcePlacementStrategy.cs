@@ -47,12 +47,12 @@ public sealed class BalancedResourcePlacementOptions
     public TimeSpan ResourceStatisticsCollectionPeriod { get; set; }
 
     /// <summary>
-    /// If <see langword="true"/>; than an <a href="https://en.wikipedia.org/wiki/Online_algorithm">online</a> adaptive filter is used to
-    /// filter out high-frequency components (provides smoothing) and avoid rapid signal drops by translating it into a more linear decay process.
+    /// If <see langword="true"/>; than an <a href="https://en.wikipedia.org/wiki/Online_algorithm">online</a> adaptive filter provides a smoothing effect 
+    /// (filters out high frequency components) and avoid rapid signal drops by transforming it into a more linear decay process.
     /// This all contributes to avoid resource saturation on the silos.
     /// </summary>
     /// <remarks>
-    /// <para>It is recommended to pick a lower (more frequent) <see cref="ResourceStatisticsCollectionPeriod"/> when adaptiv filtering is used.</para>
+    /// <para>It is highly recommended to pick a lower (more frequent) <see cref="ResourceStatisticsCollectionPeriod"/> when adaptiv filtering is used.</para>
     /// <para>Default is <see langword="false"/></para>
     /// </remarks>
     public bool UseAdaptiveFiltering { get; set; }
