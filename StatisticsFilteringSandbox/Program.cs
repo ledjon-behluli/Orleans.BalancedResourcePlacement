@@ -1,8 +1,7 @@
-﻿using Spectre.Console;
-using System.Reflection;
+﻿using ScottPlot;
+using System.Drawing;
 using Orleans.BalancedResourcePlacement;
 
-const bool saveResultForPlotting = true;
 const int iterations = 1000;
 
 var filter = new StatisticsFilter<float>();
@@ -20,135 +19,32 @@ List<(int, int)> trafficHours =
       //[(0, 1), (3, 4), (6, 7), (9, 10), (12, 13), (15, 16), (18, 19), (21, 22), (24, 25), (27, 28), (30, 31), (33, 34), (36, 37), (39, 40), (42, 43), (45, 46), (48, 49)];
 int maxHour = trafficHours.SelectMany(pair => new[] { pair.Item1, pair.Item2 }).Max();
 
-Action<int> patternInvoker = new(iteration =>
+double[] simulatedData = new double[iterations];
+double[] filteredData = new double[iterations];
+
+for (int i = 0; i < iterations; i++)
 {
-    //UsagePattern.LinearIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
+    Console.WriteLine($"Iteration: {i}");
+
+    float filteredCpuUsage = filter.Filter(simulatedCpuUsage);
+
+    simulatedData[i] = Math.Round(simulatedCpuUsage, 1);
+    filteredData[i] = Math.Round(filteredCpuUsage, 1);
+
+    UsagePattern.LinearIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
     //UsagePattern.LinearIncreaseSharpDecrease(ref cpuIncrement, ref simulatedCpuUsage);
     //UsagePattern.ExponentialIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
     //UsagePattern.LinearIncreaseWithSuddenPeriodicBouncingFluctuations(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag);
     //UsagePattern.LinearIncreaseWithSuddenSingleDownUpFluctuation(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag, ref _2ndFlag);
-    UsagePattern.SemiPeriodicHighLowTrafficWithRandomness(ref simulatedCpuUsage, iteration, iterations, maxHour, trafficHours);
-});
-
-if (!saveResultForPlotting)
-{
-    var table = new Table();
-
-    table.AddColumn("Iteration");
-    table.AddColumn("Simulated");
-    table.AddColumn("Filtered");
-
-    for (int i = 0; i < iterations; i++)
-    {
-        Console.WriteLine($"Iteration: {i}");
-
-        float filteredCpuUsage = filter.Filter(simulatedCpuUsage);
-        float diff = 100.0f * Math.Abs((filteredCpuUsage - simulatedCpuUsage) / simulatedCpuUsage);
-
-        table.AddRow(
-            (i + 1).ToString(),
-            Formatter.ForDisplay(simulatedCpuUsage),
-            Formatter.ForDisplay(filteredCpuUsage));
-
-        patternInvoker(i);
-    }
-
-    AnsiConsole.Write(table);
-    Console.ReadKey();
+    //UsagePattern.SemiPeriodicHighLowTrafficWithRandomness(ref simulatedCpuUsage, i, iterations, maxHour, trafficHours);
 }
-else
-{
-    using (StreamWriter writer = new("output.txt"))
-    {
-        foreach (string column in new string[] { "Iteration", "Simulated", "Filtered", "Diff (%)" })
-        {
-            writer.Write(column + "\t");
-        }
 
-        writer.WriteLine();
+Plot plt = new();
 
-        for (int i = 0; i < iterations; i++)
-        {
-            Console.WriteLine($"Iteration: {i}");
+plt.AddSignal(label: "Simulated", ys: simulatedData, color: Color.Blue);
+plt.AddSignal(label: "Filtered", ys: filteredData, color: Color.Orange);
 
-            float filteredCpuUsage = filter.Filter(simulatedCpuUsage);
-            float diff = 100.0f * Math.Abs((filteredCpuUsage - simulatedCpuUsage) / simulatedCpuUsage);
-
-            WriteRow(writer,
-                (i + 1).ToString(),
-                Formatter.ForDisplay(simulatedCpuUsage),
-                Formatter.ForDisplay(filteredCpuUsage));
-
-            patternInvoker(i);
-        }
-    }
-
-    SaveSamplingForPlotting(iterations);
-
-    static void WriteRow(StreamWriter writer, params string[] values)
-    {
-        foreach (string value in values)
-        {
-            writer.Write(value + "\t");
-        }
-        writer.WriteLine();
-    }
-
-    static void SaveSamplingForPlotting(int rowCount)
-    {
-        string? filePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-
-        string[] iteration = new string[rowCount];
-        string[] cpuUsageSimulated = new string[rowCount];
-        string[] cpuUsageFiltered = new string[rowCount];
-
-        using (StreamReader reader = new(filePath + "\\output.txt"))
-        {
-            reader.ReadLine();
-
-            for (int i = 0; i < rowCount; i++)
-            {
-                string? line = reader.ReadLine();
-                if (line is null)
-                {
-                    break;
-                }
-
-                string[] columns = line.Split('\t');
-
-                iteration[i] = columns[0];
-                cpuUsageSimulated[i] = columns[1];
-                cpuUsageFiltered[i] = columns[2];
-            }
-        }
-
-        using (StreamWriter writer = new(filePath + "\\plot.txt"))
-        {
-            writer.WriteLine(
-               $"""
-            import matplotlib.pyplot as plt
-
-            iterations = [{string.Join(", ", iteration)}]
-            simulated = [{string.Join(", ", cpuUsageSimulated)}]
-            filtered = [{string.Join(", ", cpuUsageFiltered)}]
-
-            plt.figure(figsize=(100, 60))
-
-            plt.plot(iterations, simulated, marker='o', label='Simulated')
-            plt.plot(iterations, filtered, marker='o',  label='Filtered')
-
-            plt.title('Cpu Usage Comparison')
-            plt.xlabel('Iteration')
-            plt.ylabel('Values')
-            plt.legend()
-            plt.grid(True)
-            plt.show()
-            """);
-        }
-
-        File.Delete(filePath + "\\output.txt");
-    }
-}
+new FormsPlotViewer(plt).ShowDialog();
 
 class Formatter
 {

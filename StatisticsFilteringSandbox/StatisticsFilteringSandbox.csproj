@@ -2,13 +2,14 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Spectre.Console" Version="0.48.0" />
+    <PackageReference Include="ScottPlot" Version="4.1.70" />
+    <PackageReference Include="ScottPlot.WinForms" Version="4.1.70" />
   </ItemGroup>
 
   <ItemGroup>
