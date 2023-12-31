@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.BalancedResourcePla
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sample", "Sample\Sample.csproj", "{3B89F7DE-E13A-4066-AED8-4DFE634B510C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StatisticsFilteringSandbox", "StatisticsFilteringSandbox\StatisticsFilteringSandbox.csproj", "{96290F28-622C-459A-9A65-F94E9ACFF0A5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StatisticsFilteringSandbox", "StatisticsFilteringSandbox\StatisticsFilteringSandbox.csproj", "{96290F28-622C-459A-9A65-F94E9ACFF0A5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -2,7 +2,7 @@
 using System.Drawing;
 using Orleans.BalancedResourcePlacement;
 
-const int iterations = 1000;
+const int iterations = 1_000;
 
 var filter = new DualModeKalmanFilter<float>();
 
@@ -31,7 +31,7 @@ for (int i = 0; i < iterations; i++)
     simulatedData[i] = Math.Round(simulatedCpuUsage, 1);
     filteredData[i] = Math.Round(filteredCpuUsage, 1);
 
-    UsagePattern.LinearIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
+    Algorithm.LinearIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
     //UsagePattern.LinearIncreaseSharpDecrease(ref cpuIncrement, ref simulatedCpuUsage);
     //UsagePattern.ExponentialIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
     //UsagePattern.LinearIncreaseWithSuddenPeriodicBouncingFluctuations(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag);
@@ -51,7 +51,7 @@ class Formatter
     public static string ForDisplay(float? value) => Math.Round(value ?? 0, 1).ToString();
 }
 
-class UsagePattern
+class Algorithm
 {
     public static void LinearIncreaseLinearDecrease(
         ref float cpuIncrement,
