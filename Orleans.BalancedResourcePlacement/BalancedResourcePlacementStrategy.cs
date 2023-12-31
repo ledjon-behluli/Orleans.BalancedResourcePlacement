@@ -12,8 +12,7 @@ namespace Orleans.BalancedResourcePlacement;
 /// <para>In addition to normalization, an online adaptive filter provides a smoothing effect 
 /// (filters out high frequency components) and avoids rapid signal drops by transforming it into a polynomial alike decay process.
 /// Special emphasis is placed upon the startup of a newly joined silo in relation to the decay process. A polynomial decay closer to being
-/// linear is used at the earlier cycles which subsequently transforms into a more exponential alike decay.
-/// This all contributes to avoid resource saturation on the silos and especially newly joined silos.</para>
+/// linear is used at the earlier cycles which subsequently transforms into a more exponential alike decay. This contributes to avoiding resource saturation on the silos and especially newly joined silos.</para>
 /// </summary>
 /// <remarks>
 /// Details of the properties used to make the placement decisions and their default values are given below:
