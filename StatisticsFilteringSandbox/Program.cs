@@ -12,11 +12,11 @@ float simulatedCpuUsage = 5.0f;
 bool _1stFlag = false;
 bool _2ndFlag = false;
 List<(int, int)> trafficHours =
-      [(0, 1), (16, 24), (39, 40)];
+      //[(0, 1), (16, 24), (39, 40)];
       //[(0, 8), (20, 21), (40, 48)];
       //[(0, 2), (6, 8), (12, 14), (18, 22)];
       //[(0, 2), (4, 6), (8, 10), (12, 14), (16, 18), (20, 22)];
-      //[(0, 1), (3, 4), (6, 7), (9, 10), (12, 13), (15, 16), (18, 19), (21, 22), (24, 25), (27, 28), (30, 31), (33, 34), (36, 37), (39, 40), (42, 43), (45, 46), (48, 49)];
+      [(0, 1), (3, 4), (6, 7), (9, 10), (12, 13), (15, 16), (18, 19), (21, 22), (24, 25), (27, 28), (30, 31), (33, 34), (36, 37), (39, 40), (42, 43), (45, 46), (48, 49)];
 int maxHour = trafficHours.SelectMany(pair => new[] { pair.Item1, pair.Item2 }).Max();
 
 double[] simulatedData = new double[iterations];
@@ -31,12 +31,12 @@ for (int i = 0; i < iterations; i++)
     simulatedData[i] = Math.Round(simulatedCpuUsage, 1);
     filteredData[i] = Math.Round(filteredCpuUsage, 1);
 
-    Algorithm.LinearIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
-    //UsagePattern.LinearIncreaseSharpDecrease(ref cpuIncrement, ref simulatedCpuUsage);
-    //UsagePattern.ExponentialIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
-    //UsagePattern.LinearIncreaseWithSuddenPeriodicBouncingFluctuations(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag);
-    //UsagePattern.LinearIncreaseWithSuddenSingleDownUpFluctuation(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag, ref _2ndFlag);
-    //UsagePattern.SemiPeriodicHighLowTrafficWithRandomness(ref simulatedCpuUsage, i, iterations, maxHour, trafficHours);
+    //Algorithm.LinearIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
+    //Algorithm.LinearIncreaseSharpDecrease(ref cpuIncrement, ref simulatedCpuUsage);
+    //Algorithm.ExponentialIncreaseLinearDecrease(ref cpuIncrement, ref simulatedCpuUsage);
+    //Algorithm.LinearIncreaseWithSuddenPeriodicBouncingFluctuations(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag);
+    //Algorithm.LinearIncreaseWithSuddenSingleDownUpFluctuation(ref cpuIncrement, ref simulatedCpuUsage, ref _1stFlag, ref _2ndFlag);
+    Algorithm.SemiPeriodicHighLowTrafficWithRandomness(ref simulatedCpuUsage, i, iterations, maxHour, trafficHours);
 }
 
 Plot plt = new();

@@ -61,7 +61,6 @@ internal sealed class DualModeKalmanFilter<T> where T : unmanaged, INumber<T>
 
     sealed class KalmanFilter
     {
-        private readonly T measurementNoiseCovariance = T.One;
         private readonly T processNoiseCovariance;
 
         public T PriorEstimate { get; private set; } = T.Zero;
@@ -82,19 +81,19 @@ internal sealed class DualModeKalmanFilter<T> where T : unmanaged, INumber<T>
         {
             // Prediction Step:
             // -------------------------------------------
-            // Formula: x_k = A * x_k-1 + B * u_k
+            // Formula: ^x_k = A * x_k-1 + B * u_k
             // Assumptions:
             //  1. There is no control signal, therefor u_k = 0
             //  2. The state transition matrix (A) is unitary (no transitions are expected, there state won't change),
             //     therefor A = 1 (e.g: cpu usage change can't be known)
-            // Simplification: x_k = x_k-1
+            // Simplification: ^x_k = x_k-1
             T estimate = PriorEstimate;
 
-            // Formula: P_k = A * P_k-1 * A_T + Q 
+            // Formula: ^P_k = A * P_k-1 * A_T + Q 
             // Assumptions:
             //  1. Since A = 1, the transpose A_T = 1
-            //  2. The process noise covariance matrix (Q) stays, as we dont know how the system will change between two subsequent measurements.
-            // Simplification: P_k = P_k-1 + Q
+            //  2. The process noise covariance matrix (Q) stays, as refers to unpredictable changes in the system that are not explicitly modeled (all of it).
+            // Simplification: ^P_k = P_k-1 + Q
             T errorCovariance = PriorErrorCovariance + processNoiseCovariance;
 
 
@@ -102,20 +101,29 @@ internal sealed class DualModeKalmanFilter<T> where T : unmanaged, INumber<T>
             // -------------------------------------------
             // Formula: K_k = (P_k * H_T) / (H * P_k * H_T + R)
             // Assumptions:
-            //  1. The state-to-measurement matrix (H) is unitary (acts as a bridge between the internal model - A, and the external measurements - R),
+            //  1. The observation matrix (H) is unitary (acts as a bridge between the internal model - A, and the external measurements - R),
             //     therefor H = 1 (indicates that the measurements directly correspond to the state variables without any transformations or scaling factors)
             //  2. The measurement covariance matrix (R) is unitary (must be as choosing 0 would mean would lead all the consequent estimates to remaining as the initial state,
             //     therefor R = 1
-            // Simplification: K_k = P_k / (P_k + R); where R = 1 
-            T gain = errorCovariance / (errorCovariance + measurementNoiseCovariance);
+            // Simplification: K_k = P_k / (P_k + 1);
+            T gain = errorCovariance / (errorCovariance + T.One);
 
-            // Formula: x_k+1 = x_k + K_k * (z_k - x_k); where z_k is the new 'measurement'
-            PriorEstimate = estimate + gain * (measurement - estimate);
-            // Formula: P_k+1 = (1 - K_k) * P_k
-            // NOTE: [1 - gain] can never become 0, because 'gain' can only be 1 when 'errorCovariance' is infinity.
-            PriorErrorCovariance = (T.One - gain) * errorCovariance;
+            // Formula: ^x_k = x_k + K_k * (z_k - H * x_k)
+            //  1. z_k is the measurementdd
+            //  2. H = 1
+            // Simplification: ^x_k = x_k + K_k * (z_k - x_k)
+            T newEstimate = estimate + gain * (measurement - estimate);
 
-            return PriorEstimate;
+            // Formula: ^P_k = (I - K_k * H) * P_k;
+            //  1. [1 - gain] can never become 0, because 'gain' can only be 1 when 'errorCovariance' is infinity.
+            //  2. I = 1, H = 1
+            // Simplification: ^P_k = (1 - K_k) * P_k;
+            T newErrorCovariance = (T.One - gain) * errorCovariance;
+
+            PriorEstimate = newEstimate;
+            PriorErrorCovariance = newErrorCovariance;
+
+            return newEstimate;
         }
     }
 }
