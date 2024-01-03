@@ -34,6 +34,7 @@
 
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>StatisticsFilteringSandbox</_Parameter1>
+      <_Parameter1>StatisticsFilteringBenchmark</_Parameter1>
     </AssemblyAttribute>
     
   </ItemGroup>
