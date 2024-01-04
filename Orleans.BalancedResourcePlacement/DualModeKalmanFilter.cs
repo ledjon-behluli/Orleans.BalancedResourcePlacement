@@ -40,7 +40,7 @@ internal sealed class DualModeKalmanFilter<T> where T : unmanaged, INumber<T>
                 // since the slow filter will accumulate the changes, we want to reset its state
                 // so that it aligns with the current peak of the fast filter so we get a slower
                 // decay that is always aligned with the latest fast filter state and not the overall
-                // accumulated state of the whole signal over the its lifetime.
+                // accumulated state of the whole signal over its lifetime.
                 slowFilter.SetState(fastFilter.PriorEstimate, fastFilter.PriorErrorCovariance);
 
                 // ensure we recalculate since we changed both the 'estimate' and 'error covariance'
