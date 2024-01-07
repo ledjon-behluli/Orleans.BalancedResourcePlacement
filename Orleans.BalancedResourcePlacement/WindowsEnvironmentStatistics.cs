@@ -12,9 +12,9 @@ internal sealed class WindowsEnvironmentStatistics : IHostEnvironmentStatistics,
     private readonly PerformanceCounter memoryCounter;
     private readonly PerformanceCounter cpuCounter;
 
-    public long? TotalPhysicalMemory { get; private set; }
     public float? CpuUsage { get; private set; }
     public long? AvailableMemory { get; private set; }
+    public long? TotalPhysicalMemory { get; private set; }
 
     private CancellationTokenSource? cts;
     private Task? monitorTask;

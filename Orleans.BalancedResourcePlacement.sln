@@ -5,7 +5,9 @@ VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.BalancedResourcePlacement", "Orleans.BalancedResourcePlacement\Orleans.BalancedResourcePlacement.csproj", "{E8DF4124-F5C7-4B08-B749-DD21DE60C444}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample", "Sample\Sample.csproj", "{3B89F7DE-E13A-4066-AED8-4DFE634B510C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sample", "Sample\Sample.csproj", "{3B89F7DE-E13A-4066-AED8-4DFE634B510C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StatisticsFilteringSandbox", "StatisticsFilteringSandbox\StatisticsFilteringSandbox.csproj", "{96290F28-622C-459A-9A65-F94E9ACFF0A5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{3B89F7DE-E13A-4066-AED8-4DFE634B510C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3B89F7DE-E13A-4066-AED8-4DFE634B510C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3B89F7DE-E13A-4066-AED8-4DFE634B510C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96290F28-622C-459A-9A65-F94E9ACFF0A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96290F28-622C-459A-9A65-F94E9ACFF0A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96290F28-622C-459A-9A65-F94E9ACFF0A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96290F28-622C-459A-9A65-F94E9ACFF0A5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

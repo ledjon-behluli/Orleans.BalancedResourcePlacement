@@ -3,6 +3,7 @@ using Orleans.Runtime.Placement;
 using Microsoft.Extensions.DependencyInjection;
 using Orleans.Statistics;
 using System.Runtime.InteropServices;
+using System.IO;
 
 namespace Orleans.BalancedResourcePlacement;
 
@@ -18,7 +19,7 @@ public static class Extensions
     {
         BalancedResourcePlacementOptions options = new()
         {
-            ResourceStatisticsCollectionPeriod = TimeSpan.FromSeconds(5),
+            ResourceStatisticsCollectionPeriod = TimeSpan.FromSeconds(1),
             CpuUsageWeight = 0.3f,
             AvailableMemoryWeight = 0.4f,
             MemoryUsageWeight = 0.2f,
@@ -52,11 +53,9 @@ public static class Extensions
             siloBuilder.Services.AddSingleton<PlacementStrategy, BalancedResourcePlacementStrategy>();
         }
 
-        Type type = typeof(BalancedResourcePlacementStrategy);
-
         siloBuilder.Services.AddSingleton(options);
         siloBuilder.AddPlacementDirector<BalancedResourcePlacementStrategy, BalancedResourcePlacementDirector>();
-        siloBuilder.Services.AddSingleton(sp => (ISiloStatisticsListener)sp.GetServiceByKey<Type, IPlacementDirector>(type));
+        siloBuilder.Services.AddSingleton(sp => (ISiloStatisticsListener)sp.GetRequiredKeyedService<IPlacementDirector>(typeof(BalancedResourcePlacementStrategy)));
         siloBuilder.Services.AddHostedService<SiloRuntimeStatisticsCollector>();
 
         return siloBuilder;
