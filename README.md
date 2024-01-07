@@ -44,7 +44,7 @@ You can tweak the `BalancedResourcePlacementOptions` as per your needs, as the `
 
 AddBalancedResourcePlacement(optionsBuilder: options =>
 {
-    options.ResourceStatisticsCollectionPeriod = TimeSpan.FromSeconds(5);
+    options.ResourceStatisticsCollectionPeriod = TimeSpan.FromSeconds(1);
     options.CpuUsageWeight = 0.3f;
     options.AvailableMemoryWeight = 0.4f;
     options.MemoryUsageWeight = 0.2f;
