@@ -1,3 +1,5 @@
+# ⚠️This functionality is now part of Orleans via [8815](https://github.com/dotnet/orleans/pull/8815)⚠️
+
 <p align="center">
   <img src="https://github.com/ledjon-behluli/Orleans.BalancedResourcePlacement/blob/master/OrleansLogo.png" alt="Orleans.BalancedResourcePlacement" width="200px"> 
   <h1>Orleans.BalancedResourcePlacement</h1>
